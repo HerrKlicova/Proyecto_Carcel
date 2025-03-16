@@ -15,6 +15,27 @@ public:
 	// Sets default values for this actor's properties
 	AcppActor();
 
+	//VARIABLES
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Componentes")
+	float MaxHealth = 100;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Componentes")
+	float CurrentHealth = 100;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Componentes")
+	float DamageIce = 30;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Componentes")
+	float DamageFire = 15;
+
+	//FUNCIONES
+	void Add(float& value1, float value2);
+	void Subtract(float& value1, float value2);
+	void Multiply(float& value1, float value2);
+	void Divide(float& value1, float value2);
+
+
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
