@@ -34,7 +34,7 @@ APlayerCharacterC::APlayerCharacterC()
 	//Ajustes básicos del character movement 
 	GetCharacterMovement()->JumpZVelocity = 700.0f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.0f;
+	GetCharacterMovement()->MaxWalkSpeed = 300.0f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.0f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.0f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
@@ -86,6 +86,12 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Look);
+
+		//Running
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Run);
+
+		//Strop Running
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &APlayerCharacterC::StopRunning);
 	}
 	else
 	{
@@ -105,10 +111,10 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 	
 		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
 		// add movement 
 		AddMovementInput(ForwardDirection, MovementVector.Y);
@@ -123,8 +129,35 @@ void APlayerCharacterC::Look(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		// add yaw and pitch input to controller
+		// add yaw and pitch input to controller and invert Y Axis
 		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
+		AddControllerPitchInput(LookAxisVector.Y*-1);
+	}
+}
+//player starts running
+void APlayerCharacterC::Run(const FInputActionValue& Value)
+{
+	// input is a Digital(Bool)
+	bool bIsRunning = Value.Get<bool>();
+	
+	if (Controller != nullptr)
+	{
+		
+		if (bIsRunning)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = 800.0f;
+		}
+	}
+}
+//player stops running
+void APlayerCharacterC::StopRunning(const FInputActionValue& Value)
+{
+	bool bIsRunning = Value.Get<bool>();
+	if (Controller != nullptr)
+	{
+		if (!bIsRunning)
+        	{
+        		GetCharacterMovement()->MaxWalkSpeed = 300.0f;
+        	}
 	}
 }

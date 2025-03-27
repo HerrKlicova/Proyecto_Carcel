@@ -43,6 +43,9 @@ class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* RunAction;
 	
 public:
 	// Sets default values for this character's properties
@@ -55,6 +58,12 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	/** Called for running input*/
+	void Run(const FInputActionValue& Value);
+
+	/** Called for stop running input*/
+	void StopRunning(const FInputActionValue& Value);
 
 protected:
 	
