@@ -81,8 +81,9 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
-		// Moving
+		// Moving and stop moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &APlayerCharacterC::MovementCompleted);
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Look);
@@ -98,14 +99,15 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
-
+//player starts moving...
 void APlayerCharacterC::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
+	MovementVector = Value.Get<FVector2D>();
+	
 	if (Controller != nullptr)
 	{
+		
 		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -116,12 +118,22 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
-		// add movement 
+		// add movement
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+
+		//if character is moving in any direction, it will face towards look direction
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		
 	}
 }
-
+//player stops moving...
+void APlayerCharacterC::MovementCompleted()
+{
+	//so will stop facing towards look direction
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+//player stops looking
 void APlayerCharacterC::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -133,6 +145,8 @@ void APlayerCharacterC::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y*-1);
 	}
+	
+	
 }
 //player starts running
 void APlayerCharacterC::Run(const FInputActionValue& Value)

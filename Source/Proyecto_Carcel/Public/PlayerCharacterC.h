@@ -39,7 +39,7 @@ class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
-
+	
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
@@ -56,6 +56,10 @@ protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
+	/** Called when movement is completed */
+	UFUNCTION()
+	void MovementCompleted();
+	
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
@@ -78,4 +82,8 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+	UPROPERTY(BlueprintReadWrite)
+	FVector2D MovementVector;
+
+	
 };
