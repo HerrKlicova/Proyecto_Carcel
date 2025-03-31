@@ -3,6 +3,7 @@
 ///
 ///	libraries
 #include "DamageableInterface.h"
+#include "HealeableInterface.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
@@ -28,7 +29,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 ///////////////////////////////////////////////////
 ///
 UCLASS()
-class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter, public IDamageableInterface
+class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter, public IDamageableInterface, public IHealeableInterface
 {
 	GENERATED_BODY()
 	
@@ -191,8 +192,8 @@ public:
 	///
 	///	Define the Interface Function from the DamageableInterface
 	virtual void ApplyDamage_Implementation(float DamageAmount) override;
-	///
-	///
+	///	Define the Interface Function from the HealeableInterface
+	virtual void ApplyHealing_Implementation(float HealAmount) override;
 	///
 protected:
 	/////////////////////////////////////////////////////

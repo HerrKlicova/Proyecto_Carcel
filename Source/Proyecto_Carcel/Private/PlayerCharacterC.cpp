@@ -341,3 +341,13 @@ void APlayerCharacterC::ApplyDamage_Implementation(float DamageAmount)
 		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);	
 	}
 }
+
+void APlayerCharacterC::ApplyHealing_Implementation(float HealAmount)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth + HealAmount, 0.0f, MaxHealth);
+
+	if (MainHUDWidgetInstance)
+	{
+		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);
+	}
+}
