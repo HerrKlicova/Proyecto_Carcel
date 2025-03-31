@@ -60,11 +60,13 @@ APlayerCharacterC::APlayerCharacterC()
 }
 ///
 ///
-///begin play
+///begin play (HUD and Timers)
 void APlayerCharacterC::BeginPlay()
 {
 	Super::BeginPlay();
-
+	///
+	///
+	//Create HUD Widget to Viewport
 	if (MainHUDWidgetClass)
 	{
 		UUserWidget* CreatedWidget = CreateWidget<UUserWidget>(GetWorld(), MainHUDWidgetClass);
@@ -76,9 +78,13 @@ void APlayerCharacterC::BeginPlay()
 			MainHUDWidgetInstance = CastedUserWidget;
 			CastedUserWidget->AddToViewport();
 		}
-		
 	}
-	
+	///
+	///
+	///	Init Current Health with Max Health
+	CurrentHealth = MaxHealth;
+	///
+	///
 	//Timer for stamina Drain and Recovery
 	GetWorldTimerManager().SetTimer(
 		TimerHandleStamina,
@@ -288,7 +294,9 @@ void APlayerCharacterC::StaminaDrainAndRecovery()
 			StaminaToRecoverPerFloat(characterStamina, staminaToRecoverNotWalkingNotFatigued);
 		}
 	}
-
+	///
+	///
+	//	implemented widget stamina bar functionality
 	if (MainHUDWidgetInstance)
 	{
 		MainHUDWidgetInstance->UpdateStaminaBar(characterStamina, 100.0f);
@@ -303,4 +311,16 @@ void APlayerCharacterC::StaminaToDrainPerFloat(float& Stamina, float FloatToDrai
 void APlayerCharacterC::StaminaToRecoverPerFloat(float& Stamina, float FloatToRecover)
 {
 	Stamina = FMath::Clamp(Stamina + FloatToRecover, 0.0f, 100.0f);
+}
+
+void APlayerCharacterC::ApplyDamage_Implementation(float DamageAmount)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, MaxHealth);
+
+	UE_LOG(LogTemplateCharacter, Warning, TEXT("El jugador ha recibido %.2f de daño. Salud actual: %.2f"), DamageAmount, CurrentHealth);
+
+	if (CurrentHealth <= 0.0f)
+	{
+		UE_LOG(LogTemplateCharacter, Error, TEXT("JUGADOR MUERTO"));
+	}
 }

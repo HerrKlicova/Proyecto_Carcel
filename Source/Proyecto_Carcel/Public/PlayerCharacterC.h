@@ -2,6 +2,7 @@
 ///
 ///
 ///	libraries
+#include "DamageableInterface.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
@@ -27,7 +28,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 ///////////////////////////////////////////////////
 ///
 UCLASS()
-class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter
+class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter, public IDamageableInterface
 {
 	GENERATED_BODY()
 	
@@ -78,7 +79,7 @@ class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter
 	///	WIDGET	WIDGET	WIDGET
 	///////////////////////////////////////////////////
 	///
-	///
+	///	Add variables for creating widget
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UUserWidget> MainHUDWidgetClass;
@@ -167,8 +168,23 @@ public:
 	/// Function that add a custom float of stamina to the player each Timer loop */
 	UFUNCTION()
 	void StaminaToRecoverPerFloat(float& Stamina, float FloatToRecover);
-
-	
+	///
+	///
+	/////////////////////////////////////////////////////
+	///	HEALTH-SYSTEM-VARS	HEALTH-SYSTEM-VARS
+	///	HEALTH-SYSTEM-VARS	HEALTH-SYSTEM-VARS
+	////////////////////////////////////////////////////////
+	///
+	///
+	///	current health
+	UPROPERTY(BlueprintReadOnly)
+	float CurrentHealth = 100.0f;
+	///	max health
+	UPROPERTY(BlueprintReadOnly)
+	float MaxHealth = 100.0f;
+	///
+	///
+	///
 protected:
 	/////////////////////////////////////////////////////
 	///	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC
@@ -206,7 +222,7 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-	
+	virtual void ApplyDamage_Implementation(float DamageAmount) override;
 
 	
 };
