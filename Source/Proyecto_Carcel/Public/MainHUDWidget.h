@@ -18,7 +18,13 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "HUD", meta = (BindWidget))
 	UProgressBar* StaminaBar;
 
+	UPROPERTY(BlueprintReadOnly, Category = "HUD", meta = (BindWidget))
+	UProgressBar* HealthBar;
+
 	//	declare a function that will update the stamina bar
 	UFUNCTION()
 	void UpdateStaminaBar(float Current, float Max);
+
+	UFUNCTION()
+	void UpdateHealthbar(float Current, float Max);
 };

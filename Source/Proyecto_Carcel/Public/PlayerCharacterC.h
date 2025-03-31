@@ -184,6 +184,15 @@ public:
 	float MaxHealth = 100.0f;
 	///
 	///
+	///////////////////////////////////////////////////////////
+	///	HEALTH-SYSTEM-FUNCT	HEALTH-SYSTEM-FUNCT
+	///	HEALTH-SYSTEM-FUNCT	HEALTH-SYSTEM-FUNCT
+	///////////////////////////////////////////////////////////
+	///
+	///	Define the Interface Function from the DamageableInterface
+	virtual void ApplyDamage_Implementation(float DamageAmount) override;
+	///
+	///
 	///
 protected:
 	/////////////////////////////////////////////////////
@@ -222,7 +231,6 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-	virtual void ApplyDamage_Implementation(float DamageAmount) override;
 
 	
 };

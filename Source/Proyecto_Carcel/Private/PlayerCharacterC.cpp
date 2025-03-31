@@ -83,6 +83,18 @@ void APlayerCharacterC::BeginPlay()
 	///
 	///	Init Current Health with Max Health
 	CurrentHealth = MaxHealth;
+	if (MainHUDWidgetInstance)
+	{
+		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);	
+	}
+	///
+	///
+	///
+	///
+	if (MainHUDWidgetInstance)
+	{
+		MainHUDWidgetInstance->UpdateStaminaBar(characterStamina, 100.0f);
+	}
 	///
 	///
 	//Timer for stamina Drain and Recovery
@@ -322,5 +334,10 @@ void APlayerCharacterC::ApplyDamage_Implementation(float DamageAmount)
 	if (CurrentHealth <= 0.0f)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("JUGADOR MUERTO"));
+	}
+
+	if (MainHUDWidgetInstance)
+	{
+		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);	
 	}
 }
