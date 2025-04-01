@@ -31,6 +31,13 @@ response = client.chat.completions.create(
 
 
 mensaje_completo = response.choices[0].message.content.strip()
+
+#   limpiar bloques de código
+if mensaje_completo.startswith("```"):
+    mensaje_completo = mensaje_completo.strip("`")
+    mensaje_completo = "\n".join(mensaje_completo.split("\n")[1:])
+    
+#   separar título y cuerpo
 lineas = mensaje_completo.split("\n", 1)
 titulo = lineas[0]
 cuerpo = lineas[1] if len(lineas) > 1 else ""
