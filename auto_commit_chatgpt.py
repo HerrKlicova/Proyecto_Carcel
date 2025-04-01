@@ -24,18 +24,29 @@ if not diff.strip():
 response = client.chat.completions.create(
     model="gpt-4",
     messages=[
-        {"role": "system", "content": "Eres un desarrollador profesional. Resume este diff en un mensaje de commit breve y claro, en español."},
+        {"role": "system", "content": "Eres un desarrollador novato en Unreal Engine y C++. Resume este diff en un mensaje de commit completo: incluye primero una línea breve estilo Conventional Commit (por ejemplo: 'feat: ...' o 'fix: ...'), y luego una descripción detallada con viñetas o párrafos. El resultado será usado directamente en un commit Git en español."},
         {"role": "user", "content": f"Diff en la rama {branch}:\n{diff}"}
     ]
 )
 
-mensaje = response.choices[0].message.content.strip()
 
-print(f"\nMensaje sugerido:\n> {mensaje}\n")
+mensaje_completo = response.choices[0].message.content.strip()
+lineas = mensaje_completo.split("\n", 1)
+titulo = lineas[0]
+cuerpo = lineas[1] if len(lineas) > 1 else ""
+bp_comment = input("¿Has hecho cambios en algún Blueprint? Describe brevemente (ENTER para omitir): ").strip()
+if bp_comment:
+    cuerpo += f"\n\n Cambios en Blueprint: \n- {bp_comment}"
+
+
+print("\n====== MENSAJE DE COMMIT ======")
+print (f"{titulo}\n")
+print (cuerpo)
+print("====================================\n")
 
 confirmar = input("¿Confirmar commit y push? (s/n): ").lower()
 if confirmar == 's':
-    subprocess.run(["git", "commit", "-m", mensaje], check=True)
+    subprocess.run(["git", "commit", "-m", titulo, "-m", cuerpo], check=True)
     subprocess.run(["git", "push", "origin", branch], check=True)
     print("✅ Commit y push realizados con éxito.")
 else:
