@@ -7,8 +7,10 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
+#include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "InteractuableInterface.h"
 #include "MainHUDWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Math/UnrealMathUtility.h"
@@ -106,6 +108,12 @@ void APlayerCharacterC::BeginPlay()
 		true
 		);
 }
+
+void APlayerCharacterC::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
 ///
 ///
 ///
@@ -151,8 +159,11 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		//Running
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Run);
 
-		//Strop Running
+		//Stop Running
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &APlayerCharacterC::StopRunning);
+
+		//Interact
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Interact);
 	}
 	else
 	{
@@ -324,7 +335,14 @@ void APlayerCharacterC::StaminaToRecoverPerFloat(float& Stamina, float FloatToRe
 {
 	Stamina = FMath::Clamp(Stamina + FloatToRecover, 0.0f, 100.0f);
 }
-
+///
+///
+////////////////////////////////////////////////////////
+///	DAMAGE-SYSTEM	DAMAGE-SYSTEM	DAMAGE-SYSTEM
+///	DAMAGE-SYSTEM	DAMAGE-SYSTEM	DAMAGE-SYSTEM
+////////////////////////////////////////////////////
+///
+///
 void APlayerCharacterC::ApplyDamage_Implementation(float DamageAmount)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, MaxHealth);
@@ -341,7 +359,7 @@ void APlayerCharacterC::ApplyDamage_Implementation(float DamageAmount)
 		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);	
 	}
 }
-
+///
 void APlayerCharacterC::ApplyHealing_Implementation(float HealAmount)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth + HealAmount, 0.0f, MaxHealth);
@@ -349,5 +367,69 @@ void APlayerCharacterC::ApplyHealing_Implementation(float HealAmount)
 	if (MainHUDWidgetInstance)
 	{
 		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);
+	}
+}
+///
+///
+////////////////////////////////////////////////////////
+///	INTERACT-SYSTEM	INTERACT-SYSTEM	INTERACT-SYSTEM
+///	INTERACT-SYSTEM	INTERACT-SYSTEM	INTERACT-SYSTEM
+////////////////////////////////////////////////////
+///
+///
+void APlayerCharacterC::Interact(const FInputActionValue& Value)
+{	//	get value of bIsInteracting Input
+	bool bIsInteracting = Value.Get<bool>();
+
+	//	If input is true, call the interact function
+	if (bIsInteracting)
+	{
+		InteractLineTrace();
+	}
+}
+//	Called on interacted
+void APlayerCharacterC::InteractLineTrace()
+{
+	//	Struct that saves the info about the raycast impact (Actor, Location, Surface Normal...)
+	FHitResult Hit;
+	//	Raycast start point
+	FVector Start = FollowCamera->GetComponentLocation();
+	//	Raycast end point
+	FVector End = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 1000.0f;
+
+	//	Creates a object with parameters for configuring the raycast (what will ignore, if has to detect complex objects...)
+	FCollisionQueryParams QueryParams;
+	//	Tells the raycast that has to ignore this actor
+	QueryParams.AddIgnoredActor(this);
+	
+	//	Throws the raycast on the world from Start postion to End position using a collision channel (ECC_Pawn) and saves the result on Hit
+	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, TraceChannelProperty, QueryParams);
+	//	Paints a line of the raycast visible on the world. If hits something, the raycast will be Red, if not, will be green. 0.5 seconds with a thickness of 1
+	DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Red : FColor::Green, false, 0.5f, 0, 1.0f);
+	//	Shows on log the start point and end point of the raycast
+	UE_LOG(LogTemplateCharacter, Warning, TEXT("Tracing line: %s to %s"), *Start.ToCompactString(), *End.ToCompactString());
+
+	//	If hits and the actor hitted is Valid...
+	if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
+	{	//	...prints on screen the actor hitted
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Trace hit actor: %s"), *Hit.GetActor()->GetName()));
+	}
+	else
+	{	//	...prints on screen no actor hitted
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, TEXT("No hit actor"));
+
+	}
+	
+	//	if hit actor Is Valid...
+	if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
+	{
+		//	...create a variable with that actor...
+		AActor* HitActor = Hit.GetActor();
+		//	...and check if implements InteractuableInterface...
+		if (HitActor->Implements<UInteractuableInterface>())
+		{
+			//	...execute the Interact function on the interactuable actor.
+			IInteractuableInterface::Execute_Interact(HitActor);
+		}
 	}
 }

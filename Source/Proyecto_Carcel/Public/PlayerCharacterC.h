@@ -29,7 +29,9 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 ///////////////////////////////////////////////////
 ///
 UCLASS()
-class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter, public IDamageableInterface, public IHealeableInterface
+class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter,
+public IDamageableInterface,
+public IHealeableInterface
 {
 	GENERATED_BODY()
 	
@@ -73,6 +75,10 @@ class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter, public IDamagea
 	/** Run Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* RunAction;
+
+	/** Interact Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* InteractAction;
 	///
 	///
 	///////////////////////////////////////////////////
@@ -99,6 +105,7 @@ public:
 	///
 	/// Begin Play function */
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	///
 	///
 	///
@@ -156,8 +163,8 @@ public:
 	///	STAMINA-SYSTEM-FUNCTIONS	STAMINA-SYSTEM-FUNCTIONS
 	///	STAMINA-SYSTEM-FUNCTIONS	STAMINA-SYSTEM-FUNCTIONS
 	/////////////////////////////////////////////////////
-
-	
+	///
+	///
 	/// Function that works with a Timer and implements the Drain and Recovery Stamina system */
 	UFUNCTION()
 	void StaminaDrainAndRecovery();
@@ -195,6 +202,30 @@ public:
 	///	Define the Interface Function from the HealeableInterface
 	virtual void ApplyHealing_Implementation(float HealAmount) override;
 	///
+	///
+	//////////////////////////////////////////////////////////////
+	///	INTERACT-SYSTEM-VARS	INTERACT-SYSTEM-VARS
+	///	INTERACT-SYSTEM-VARS	INTERACT-SYSTEM-VARS
+	//////////////////////////////////////////////////////////////
+	///
+	///
+	UPROPERTY(EditAnywhere, Category = "Interact")
+	TEnumAsByte<ECollisionChannel> TraceChannelProperty = ECC_Pawn;
+	
+	///
+	///
+	/////////////////////////////////////////////////////////////////
+	///	INTERACT-SYSTEM-FUNC		INTERACT-SYSTEM-FUNC
+	///	INTERACT-SYSTEM-FUNC		INTERACT-SYSTEM-FUNC
+	/////////////////////////////////////////////////////////////////
+	///
+	///
+	
+	//	Function that executes a debug line from camera forwards and detects actors
+	UFUNCTION(BlueprintCallable, Category = "Interact")
+	void InteractLineTrace();
+
+	
 protected:
 	/////////////////////////////////////////////////////
 	///	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC
@@ -218,6 +249,8 @@ protected:
 
 	/** Called for stop running input */
 	void StopRunning(const FInputActionValue& Value);
+
+	void Interact(const FInputActionValue& Value);
 
 	/* Detect if controller has changed (inherited from AActor)	*/
 	virtual void NotifyControllerChanged() override;

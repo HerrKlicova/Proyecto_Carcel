@@ -28,3 +28,15 @@ void UMainHUDWidget::UpdateHealthbar(float Current, float Max)
 	}
 }
 
+void UMainHUDWidget::ShowInteractionMessage(FText Object)
+{
+	if (InteractMessage)
+	{
+		InteractMessage->SetText(Object);
+	}
+}
+
+void UMainHUDWidget::HideInteractionMessage()
+{
+}
+
