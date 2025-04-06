@@ -16,14 +16,14 @@
 #include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
 #include "Components/InputComponent.h"
+#include "EntitySystem/MovieSceneEntitySystemRunner.h"
+////
 ///
-///
-///	Custom log category
+//	Custom log category
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
+//
 ///
-///
-///
-/// Sets default values (CONSTRUCTOR)
+//// Sets default values (CONSTRUCTOR)
 APlayerCharacterC::APlayerCharacterC()
 {
 	//Inicializar el tamaño de la cápsula de personaje
@@ -61,9 +61,9 @@ APlayerCharacterC::APlayerCharacterC()
 	// son puestas en el blueprint asset derivado llamado ThirdPersonCharacter (para evitar referencias de contenido directas)
 	
 }
+////
 ///
-///
-///begin play (HUD and Timers)
+//	begin play (HUD and Timers)
 void APlayerCharacterC::BeginPlay()
 {
 	Super::BeginPlay();
@@ -119,22 +119,21 @@ void APlayerCharacterC::BeginPlay()
 	}
 
 }
-
+//
 void APlayerCharacterC::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-
+//
 ///
-///
-///
-/////////////////////////////////////////////////////
+////
+//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///	INPUT MAPPING AND BINDING	INPUT MAPPING AND BINDING
 ///	INPUT MAPPING AND BINDING	INPUT MAPPING AND BINDING
-////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+////
 ///
-///
-///	Setup Input Mapping Context (cast to APlayerController)
+//	Setup Input Mapping Context (cast to APlayerController)
 void APlayerCharacterC::NotifyControllerChanged()
 {
 	Super::NotifyControllerChanged();
@@ -148,9 +147,9 @@ void APlayerCharacterC::NotifyControllerChanged()
 		}
 	}
 }
+//
 ///
-///
-///	Bind Input Actions
+////	Bind Input Actions
 void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
@@ -181,9 +180,9 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
+//
 ///
-///
-///	player starts moving...
+////	player starts moving...
 void APlayerCharacterC::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -208,24 +207,23 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 
 		//if character is moving in any direction, it will face towards look direction
 		GetCharacterMovement()->bOrientRotationToMovement = false;
-
-		bIsCharacterMoving = true;
+		//	enum state to Walking
+		MovementState = EMovementState::Walking;
 	}
 }
+////
 ///
-///
-///	player stops moving...
+//		player stops moving...
 void APlayerCharacterC::MovementCompleted()
 {
 	//so will stop facing towards look direction
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	bIsCharacterMoving = false;
-	bIsCharacterRunning = false;
+	MovementState = EMovementState::Standing;
 }
+//
 ///
-///
-///	player stops looking
+////	player stops looking
 void APlayerCharacterC::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -240,95 +238,115 @@ void APlayerCharacterC::Look(const FInputActionValue& Value)
 	
 	
 }
+////
 ///
-///
-///	player starts running
+//		player starts running
 void APlayerCharacterC::Run(const FInputActionValue& Value)
-{
-	if (bIsCharacterMoving)
-	{
+{	///	if movement state enum is walking...
+	if (MovementState == EMovementState::Walking)
+	{	///	can start running
+		MovementState = EMovementState::Running;
+		
 		// input is a Digital(Bool)
 		bIsCharacterRunning = Value.Get<bool>();
         	
         	if (Controller != nullptr)
-        	{
-        		if (bIsCharacterExhausted && bIsCharacterFatigued)
-        		{
-        			bIsCharacterRunning = false;
+        	{	//	if exhausted...
+        		if (StaminaState == EStaminaState::Exhausted)
+        		{	//	stops moving
+        			MovementState = EMovementState::Standing;
         			GetCharacterMovement()->MaxWalkSpeed = characterWalkSpeed;
-        		}
+        		}	//	if fatigued...
+        		else if (StaminaState == EStaminaState::Fatigued)
+        		{	//	reduces speed
+        			GetCharacterMovement()->MaxWalkSpeed = characterSprintSpeedFatigued;
+        		}	//	if normal
         		else
-        		{
-        			GetCharacterMovement()->MaxWalkSpeed = bIsCharacterFatigued ? characterSprintSpeedFatigued : characterSprintSpeed;
+        		{	//	runs
+        			GetCharacterMovement()->MaxWalkSpeed = characterSprintSpeed;
         		}
         	}
 	}
 }
+//
 ///
-///
-///	player stops running
+////	player stops running
 void APlayerCharacterC::StopRunning(const FInputActionValue& Value)
 {
 	bIsCharacterRunning = Value.Get<bool>();
 	
 	if (Controller != nullptr)
-	{
-		if (!bIsCharacterRunning)
-        	{
+	{	//	if is NOT running 
+		if (MovementState != EMovementState::Running)
+        	{	//	starts walking
+				MovementState = EMovementState::Walking;
         		GetCharacterMovement()->MaxWalkSpeed = characterWalkSpeed;
         	}
 	}
 }
+////
 ///
-///
-////////////////////////////////////////////////////////
+//
+//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///	STAMINA-SYSTEM	STAMINA-SYSTEM	STAMINA-SYSTEM
 ///	STAMINA-SYSTEM	STAMINA-SYSTEM	STAMINA-SYSTEM
 ////////////////////////////////////////////////////
+//
 ///
-///
-///	Drain stamina when running and recover stamina in different cuantities depending on movement state
+////	Drain stamina when running and recover stamina in different cuantities depending on movement state
 void APlayerCharacterC::StaminaDrainAndRecovery()
 {
 	//	If character is running, drain stamina 
-	if (bIsCharacterRunning)
-	{	// Function that decreases stamina 
+	if (MovementState == EMovementState::Running)
+	{	// Function that decreases stamina depending on the state
 		StaminaToDrainPerFloat(characterStamina, staminaToDrainRunning);
-		//	Character fatigued and exhausted		
-		if (characterStamina < characterStaminaTreshold)
-		{
-			bIsCharacterFatigued = true;
-			
-			if (characterStamina <= characterStaminaExhausted)
-			{
-				bIsCharacterExhausted = true;
-			}
+		
+		//	if character stamina less or equal than 0
+		if (characterStamina <= characterStaminaExhausted)
+		{	//	is exhausted
+			StaminaState = EStaminaState::Exhausted;
+		}	//	if character stamina less than 30
+		else if (characterStamina < characterStaminaTreshold)
+		{	//	is fatigued
+			StaminaState = EStaminaState::Fatigued;
+		}	//	if character stamina greater than 30
+		else
+		{	//	is normal
+			StaminaState = EStaminaState::Normal;
 		}
-	}	//	If character IS NOT running, recover stamina
+	}
+	//	If character IS NOT running, recover stamina
 	else
-	{	//	If character is moving, he will recover stamina slower
-		if (bIsCharacterMoving)
-		{
-			StaminaToRecoverPerFloat(characterStamina,
-				(characterStamina <= characterStaminaTreshold) ?
-				staminaToRecoverWalkingFatigued : staminaToRecoverWalkingNotFatigued);
-			
-			if (characterStamina > characterStaminaExhausted && characterStamina >= characterStaminaTreshold)
-			{
-				bIsCharacterExhausted = false;
-			}
-			
-			if (characterStamina >= characterStaminaTreshold)
-			{
-				bIsCharacterFatigued = false;
+	{	//	If character is walking, he will recover stamina slower
+		if (MovementState == EMovementState::Walking)
+		{	// switch on Stamina State
+			switch (StaminaState)
+			{	//	on exhausted...
+				case EStaminaState::Exhausted:
+				//	on fatigued...
+				case EStaminaState::Fatigued:
+					//	recover 5.0f stamina
+					StaminaToRecoverPerFloat(characterStamina, staminaToRecoverWalkingFatigued);
+				break;
+				// on normal...
+				case EStaminaState::Normal:
+					//	recover 10.0f stamina
+					StaminaToRecoverPerFloat(characterStamina, staminaToRecoverWalkingNotFatigued);
+				break;
 			}
 		}	// If character IS NOT moving, he will recover stamina a lot faster
 		else
-		{
+		{	//	recover 15.0f stamina
 			StaminaToRecoverPerFloat(characterStamina, staminaToRecoverNotWalkingNotFatigued);
 		}
+		
+	//	check on timer update and if player is NOT running, if stamina is greater than the treshold so the StaminaState is updated
+	if (characterStamina >= characterStaminaTreshold)
+	{
+		StaminaState = EStaminaState::Normal;
+	}		
 	}
-	///
+	////
 	///
 	//	implemented widget stamina bar functionality
 	if (MainHUDWidgetInstance)
@@ -336,24 +354,26 @@ void APlayerCharacterC::StaminaDrainAndRecovery()
 		MainHUDWidgetInstance->UpdateStaminaBar(characterStamina, 100.0f);
 	}
 }
-
+////	The stamina to drain when running
 void APlayerCharacterC::StaminaToDrainPerFloat(float& Stamina, float FloatToDrain)
 {
 	Stamina = FMath::Clamp(Stamina - FloatToDrain, 0.0f, 100.0f);
 }
-
+////	The stamina to recover when walking depending the state
 void APlayerCharacterC::StaminaToRecoverPerFloat(float& Stamina, float FloatToRecover)
 {
 	Stamina = FMath::Clamp(Stamina + FloatToRecover, 0.0f, 100.0f);
 }
+////
 ///
-///
-////////////////////////////////////////////////////////
+//
+//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///	DAMAGE-SYSTEM	DAMAGE-SYSTEM	DAMAGE-SYSTEM
 ///	DAMAGE-SYSTEM	DAMAGE-SYSTEM	DAMAGE-SYSTEM
 ////////////////////////////////////////////////////
-///
-///
+//
+/// 
+////
 void APlayerCharacterC::ApplyDamage_Implementation(float DamageAmount)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, MaxHealth);
@@ -370,7 +390,7 @@ void APlayerCharacterC::ApplyDamage_Implementation(float DamageAmount)
 		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);	
 	}
 }
-///
+////
 void APlayerCharacterC::ApplyHealing_Implementation(float HealAmount)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth + HealAmount, 0.0f, MaxHealth);
@@ -380,14 +400,16 @@ void APlayerCharacterC::ApplyHealing_Implementation(float HealAmount)
 		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);
 	}
 }
+////
 ///
-///
-////////////////////////////////////////////////////////
+//
+//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///	INTERACT-SYSTEM	INTERACT-SYSTEM	INTERACT-SYSTEM
 ///	INTERACT-SYSTEM	INTERACT-SYSTEM	INTERACT-SYSTEM
 ////////////////////////////////////////////////////
+//
 ///
-///	This function is called from the input action on interaction
+////	<-Called from the interact input->
 void APlayerCharacterC::Interact(const FInputActionValue& Value)
 {	//	get value of bIsInteracting Input
 	bool bIsInteracting = Value.Get<bool>();
@@ -398,8 +420,7 @@ void APlayerCharacterC::Interact(const FInputActionValue& Value)
 		InteractLineTrace();
 	}
 }
-
-//	Called from interact function
+////	<-Called from interact function->
 void APlayerCharacterC::InteractLineTrace()
 {
 	//	Struct that saves the info about the raycast impact (Actor, Location, Surface Normal...)
@@ -445,7 +466,7 @@ void APlayerCharacterC::InteractLineTrace()
 		}
 	}
 }
-
+////	<-Called from the timer update->
 void APlayerCharacterC::DetectionLineTrace()
 {
 	FHitResult Hit;

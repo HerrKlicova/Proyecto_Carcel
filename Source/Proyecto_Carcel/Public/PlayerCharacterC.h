@@ -10,7 +10,7 @@
 #include "PlayerCharacterC.generated.h"
 ///
 ///
-///	classes
+///	class forward declarations
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -18,7 +18,7 @@ class UInputAction;
 class UMainHUDWidget;
 ///
 ///
-///	structs
+///	structs forward declarations
 struct FInputActionValue;
 ///
 ///
@@ -26,7 +26,25 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 ///
 ///
-///////////////////////////////////////////////////
+///
+///	declare enums | Stamina State
+UENUM(Blueprintable)
+enum class EStaminaState : uint8
+{
+	Normal	UMETA(DisplayName = "Normal"),
+	Fatigued UMETA(DisplayName = "Fatigued"),
+	Exhausted UMETA(DisplayName = "Exhausted"),
+};
+///	Movement State
+UENUM(Blueprintable)
+enum class EMovementState : uint8
+{
+	Standing UMETA(DisplayName = "Standing"),
+	Walking UMETA(DisplayName = "Walking"),
+	Running UMETA(DisplayName = "Running"),
+};
+///
+//////////////////////////////////////////////////////
 ///
 UCLASS()
 class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter,
@@ -119,18 +137,16 @@ public:
 	FTimerHandle TimerHandleStamina;
 	///
 	///
-	///	Character's Bools */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsCharacterMoving = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsCharacterFatigued = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsCharacterExhausted = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsCharacterRunning;
+	///	Character's stamina and movement states */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
+	EStaminaState StaminaState = EStaminaState::Normal;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	EMovementState MovementState = EMovementState::Standing;
+	
 	///
 	///
-	///	Character's Max Walk Speeds */
+	///	Character's Max Movement Speeds */
 	UPROPERTY()
 	float characterSprintSpeed = 800.0f;
 	UPROPERTY()
