@@ -13,6 +13,7 @@
 #include "InteractuableInterface.h"
 #include "MainHUDWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
 #include "Components/InputComponent.h"
 ///
@@ -100,13 +101,23 @@ void APlayerCharacterC::BeginPlay()
 	///
 	///
 	//Timer for stamina Drain and Recovery
-	GetWorldTimerManager().SetTimer(
-		TimerHandleStamina,
-		this,
-		&APlayerCharacterC::StaminaDrainAndRecovery,
-		1.0f,
-		true
-		);
+	if (IsValid(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)))
+	{
+		GetWorldTimerManager().SetTimer(
+	TimerHandleStamina,
+	this,
+	&APlayerCharacterC::StaminaDrainAndRecovery,
+	1.0f,
+	true
+	);
+		GetWorldTimerManager().SetTimer(
+			DetectionTimerHandle,
+			this,
+			&APlayerCharacterC::DetectionLineTrace,
+			0.5f,
+			true);
+	}
+
 }
 
 void APlayerCharacterC::Tick(float DeltaTime)
@@ -376,7 +387,7 @@ void APlayerCharacterC::ApplyHealing_Implementation(float HealAmount)
 ///	INTERACT-SYSTEM	INTERACT-SYSTEM	INTERACT-SYSTEM
 ////////////////////////////////////////////////////
 ///
-///
+///	This function is called from the input action on interaction
 void APlayerCharacterC::Interact(const FInputActionValue& Value)
 {	//	get value of bIsInteracting Input
 	bool bIsInteracting = Value.Get<bool>();
@@ -387,7 +398,8 @@ void APlayerCharacterC::Interact(const FInputActionValue& Value)
 		InteractLineTrace();
 	}
 }
-//	Called on interacted
+
+//	Called from interact function
 void APlayerCharacterC::InteractLineTrace()
 {
 	//	Struct that saves the info about the raycast impact (Actor, Location, Surface Normal...)
@@ -395,7 +407,7 @@ void APlayerCharacterC::InteractLineTrace()
 	//	Raycast start point
 	FVector Start = FollowCamera->GetComponentLocation();
 	//	Raycast end point
-	FVector End = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 1000.0f;
+	FVector End = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 500.0f;
 
 	//	Creates a object with parameters for configuring the raycast (what will ignore, if has to detect complex objects...)
 	FCollisionQueryParams QueryParams;
@@ -403,7 +415,7 @@ void APlayerCharacterC::InteractLineTrace()
 	QueryParams.AddIgnoredActor(this);
 	
 	//	Throws the raycast on the world from Start postion to End position using a collision channel (ECC_Pawn) and saves the result on Hit
-	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, TraceChannelProperty, QueryParams);
+	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, InteractionChannelProperty, QueryParams);
 	//	Paints a line of the raycast visible on the world. If hits something, the raycast will be Red, if not, will be green. 0.5 seconds with a thickness of 1
 	DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Red : FColor::Green, false, 0.5f, 0, 1.0f);
 	//	Shows on log the start point and end point of the raycast
@@ -432,4 +444,36 @@ void APlayerCharacterC::InteractLineTrace()
 			IInteractuableInterface::Execute_Interact(HitActor);
 		}
 	}
+}
+
+void APlayerCharacterC::DetectionLineTrace()
+{
+	FHitResult Hit;
+
+	FVector Start = FollowCamera->GetComponentLocation();
+	FVector End = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 500.0f;
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	
+	//	uses as channel the detection collision channel
+	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, DetecitonChannelProperty, QueryParams);
+
+	//	check if Hit Actor blocked and if the actor blocked is valid
+	if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
+	{	//	save the Hit Actor on a AActor pointer
+		AActor* CurrentActor = Hit.GetActor();
+		//	if the detected actor is not equal to the last detected actor...
+		if (CurrentActor != LastDetectedActor.Get())
+		{	//	...last detected actor will become the current actor
+			LastDetectedActor = CurrentActor;
+		}
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Emerald, FString::Printf(TEXT("Trace hit actor: %s"), *CurrentActor->GetName()));
+	}
+	//	if the detected actor is the same as the last detected actor...
+	else
+	{	//	...clean the last detected actor pointer
+		LastDetectedActor = nullptr;
+	}
+	DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Yellow, false, 0.1f, 0, 1.0f);
 }

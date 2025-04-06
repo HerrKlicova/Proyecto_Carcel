@@ -209,9 +209,19 @@ public:
 	//////////////////////////////////////////////////////////////
 	///
 	///
+	///	Creates the channel throught the LineTraces will be thrown?
 	UPROPERTY(EditAnywhere, Category = "Interact")
-	TEnumAsByte<ECollisionChannel> TraceChannelProperty = ECC_Pawn;
+	TEnumAsByte<ECollisionChannel> InteractionChannelProperty = ECC_GameTraceChannel2;
+
+	UPROPERTY(EditAnywhere, Category = "Interact")
+	TEnumAsByte<ECollisionChannel> DetecitonChannelProperty = ECC_GameTraceChannel3;
 	
+	//	Timer for detection LineTrace
+	FTimerHandle DetectionTimerHandle;
+
+	//	save the last detected actor for the HUD implementation
+	UPROPERTY()
+	TWeakObjectPtr<AActor>LastDetectedActor = nullptr;
 	///
 	///
 	/////////////////////////////////////////////////////////////////
@@ -224,6 +234,9 @@ public:
 	//	Function that executes a debug line from camera forwards and detects actors
 	UFUNCTION(BlueprintCallable, Category = "Interact")
 	void InteractLineTrace();
+
+	UFUNCTION(Blueprintable, Category = "Interact")
+	void DetectionLineTrace();
 
 	
 protected:
@@ -250,6 +263,7 @@ protected:
 	/** Called for stop running input */
 	void StopRunning(const FInputActionValue& Value);
 
+	/** Called for interaction input */
 	void Interact(const FInputActionValue& Value);
 
 	/* Detect if controller has changed (inherited from AActor)	*/
@@ -264,7 +278,5 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
-
 	
 };

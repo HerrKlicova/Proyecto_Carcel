@@ -10,7 +10,7 @@ AInteractuableActor::AInteractuableActor()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision"));
-	BoxComponent->SetupAttachment(RootComponent);
+	RootComponent = BoxComponent;
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	StaticMesh->SetupAttachment(BoxComponent);
