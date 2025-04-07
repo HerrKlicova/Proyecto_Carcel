@@ -11,6 +11,7 @@
 ///
 ///
 ///	class forward declarations
+class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
@@ -69,6 +70,9 @@ public IHealeableInterface
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* CameraBoom;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* SkeletalMesh = GetMesh();
@@ -160,6 +164,12 @@ public:
 	///	CAMERA	CAMERA	CAMERA
 	/////////////////////////////////////////////////////
 	///
+	/**	Function called on the Tick that manages all the camera interpolation logic **/
+	void UpdateCameraLag();
+	
+	/**	Function called on the Tick that manages the FOV changes **/
+	void UpdateCameraFOV();
+	
 	//	Camera FOV variables
 	float CurrentFOV;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
@@ -170,11 +180,24 @@ public:
 	float FatiguedFOV = 85.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
 	float InterpFOVSpeed = 5.0;
-
-	//	Control rotation for intertia look
+	///
+	/**	Create a FRotator for Camera Lag **/
 	FRotator TargetControlRotation;
-	///
-	///
+	/**	Interpolation Speed for the lag camera effect	**/
+	float InterpControlRotation = 15.0f;
+
+	/**	Camera swaying on rotation variables **/
+		/* Actual camera roll and camera roll target */
+	float CurrentCameraRoll = 0.0f;
+	float CameraRollTarget = 0.0f;
+
+		/* Max swaying angle and interpolation speed */
+	float MaxLeanAngle = 5.0f;
+	float LeanInterpSpeed = 5.0f;
+	
+	
+	
+	
 	///	Character's Max Movement Speeds */
 	UPROPERTY()
 	float characterSprintSpeed = 800.0f;
@@ -322,6 +345,7 @@ protected:
 	
 public:
 	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera;}
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const {return CameraBoom;}
 	
 };

@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InteractuableInterface.h"
 #include "MainHUDWidget.h"
@@ -26,19 +27,19 @@ APlayerCharacterC::APlayerCharacterC()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
-	//Inicializar el tamaño de la cápsula de personaje
+	/**	Capsule Component Init **/
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 	
-	//No rotar cuando el controlador rote
+	/**	Controller controls rotation **/
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 	
-	//Configurar movimiento del character
-	GetCharacterMovement()->bOrientRotationToMovement = true; //el jugador se mueve en la direccion al input...
+	/**	Character Movement Rotation **/
+	GetCharacterMovement()->bOrientRotationToMovement = false; //el jugador se mueve en la direccion al input...
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); //a esta rotación
 	
-	//Ajustes básicos del character movement 
+	/**	Character Movement Basics **/ 
 	GetCharacterMovement()->JumpZVelocity = 700.0f;
 	GetCharacterMovement()->AirControl = 0.35f;
 	GetCharacterMovement()->MaxWalkSpeed = 300.0f;
@@ -46,14 +47,22 @@ APlayerCharacterC::APlayerCharacterC()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.0f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	//Crear camara que sigue al jugador
+	/**	Create camera Boom and adjust basics **/
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
+	CameraBoom->SetupAttachment(SkeletalMesh, TEXT("headSocket"));
+	CameraBoom->TargetArmLength = 2.0f;
+	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bEnableCameraRotationLag = true;
+	CameraBoom->CameraRotationLagSpeed = 15.0f;
+	
+	/** Create camera component and attach to Camera Boom **/
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>("FollowCamera");
-	FollowCamera->SetupAttachment(SkeletalMesh, TEXT("headSocket")); //	la cámara hereda en la jerarquía del SKM
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = true;
+
 	
-	// Nota: Las referencias al skeletal mesh y el anim blueprint en el componente mesh (heredado de Character)
-	// son puestas en el blueprint asset derivado llamado ThirdPersonCharacter (para evitar referencias de contenido directas)
-	
+	/** Nota: Las referencias al skeletal mesh y el anim blueprint en el componente mesh (heredado de Character)
+		son puestas en el blueprint asset derivado llamado ThirdPersonCharacter (para evitar referencias de contenido directas)	**/
 }
 ////
 ///
@@ -86,16 +95,13 @@ void APlayerCharacterC::BeginPlay()
 	{
 		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);	
 	}
-	///
-	///
-	///
-	///
+	
+	/**	Update HUD stamina bar with CharacterStamina variable **/
 	if (MainHUDWidgetInstance)
 	{
 		MainHUDWidgetInstance->UpdateStaminaBar(characterStamina, 100.0f);
 	}
-	///
-	///
+	
 	/**	Check if Player Character exists	**/
 	if (IsValid(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)))
 	{	/**	Init stamina timer 1.0f **/
@@ -113,41 +119,19 @@ void APlayerCharacterC::BeginPlay()
     	&APlayerCharacterC::DetectionLineTrace,
     	0.1f,
     	true
-    	);	
+    	);
 	}
-
 }
-//
+/**	Tick. Camera FOV and Camera Lag	**/
 void APlayerCharacterC::Tick(float DeltaTime)
 {	//	Tick (Camera FOV)
 	Super::Tick(DeltaTime);
 
-	//	Set current FOV
-	CurrentFOV = FollowCamera->FieldOfView;
-	//	Target
-	float TargetFOV;
-	
-	switch (FieldOfViewState)
-	{	//	90.0f
-	case EFieldOfViewState::Normal:
-		TargetFOV = NormalFOV;
-		break;	//	100.0f
-	case EFieldOfViewState::Running:
-		TargetFOV = RunningFOV;
-		break;	//	85.0f
-	case EFieldOfViewState::Fatigued:
-		TargetFOV = FatiguedFOV;
-		break;
-	}	//	Set the FOV depending the FOV state (Interpolates from the current FOV to the target FOV. Interp Speed can be modified)
-	FollowCamera->FieldOfView = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, InterpFOVSpeed);
+	/**	Calls the camera FOV function **/
+	UpdateCameraFOV();
 
-	//	Interpolates the accumulated rotation to the desired direction
-	if (Controller)
-	{
-		FRotator CurrentRotation = Controller->GetControlRotation();
-		FRotator InterpolatedRotation = FMath::RInterpTo(CurrentRotation, TargetControlRotation, DeltaTime, 20.0f);
-		Controller->SetControlRotation(InterpolatedRotation);
-	}
+	/**	Calls the camera lag function **/
+	UpdateCameraLag();
 }
 //
 ///
@@ -250,16 +234,17 @@ void APlayerCharacterC::Look(const FInputActionValue& Value)
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (Controller)
-	{	//	accumulates the rotation in TargetControlRotation
+	{	//	Accumulates the rotation in TargetControlRotation
 		TargetControlRotation.Yaw += LookAxisVector.X;
 		TargetControlRotation.Pitch = FMath::Clamp(TargetControlRotation.Pitch + (LookAxisVector.Y * 1), -85.f, 85.f);
+
+		/*	Detect where is rotating and adjust sway target	*/
+		CameraRollTarget = LookAxisVector.X * -MaxLeanAngle;
 		
 		// add yaw and pitch input to controller and invert Y Axis
 		//AddControllerYawInput(LookAxisVector.X);
 		//AddControllerPitchInput(LookAxisVector.Y*-1);
 	}
-
-	
 }
 ////
 ///
@@ -457,7 +442,7 @@ void APlayerCharacterC::ApplyHealing_Implementation(float HealAmount)
 ////////////////////////////////////////////////////
 //
 ///
-////	<-Called from the interact input->
+/*	<-Called from the interact input-> */
 void APlayerCharacterC::Interact(const FInputActionValue& Value)
 {	//	get value of bIsInteracting Input
 	bool bIsInteracting = Value.Get<bool>();
@@ -468,7 +453,8 @@ void APlayerCharacterC::Interact(const FInputActionValue& Value)
 		InteractLineTrace();
 	}
 }
-////	<-Called from interact function->
+
+/*	<-Called from interact function-> */
 void APlayerCharacterC::InteractLineTrace()
 {
 	//	Struct that saves the info about the raycast impact (Actor, Location, Surface Normal...)
@@ -514,7 +500,8 @@ void APlayerCharacterC::InteractLineTrace()
 		}
 	}
 }
-////	<-Called from the timer update->
+
+/*	<-Called from the timer update-> */
 void APlayerCharacterC::DetectionLineTrace()
 {
 	FHitResult Hit;
@@ -550,5 +537,45 @@ void APlayerCharacterC::DetectionLineTrace()
 		MainHUDWidgetInstance->HideInteractionMessage();
 	}
 	//DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Yellow, false, 0.1f, 0, 1.0f);
-	
 }
+
+/*	This function Interpolates the camera Control Rotation to create a camera lag <-Called on Tick-> */
+void APlayerCharacterC::UpdateCameraLag()
+{
+	//	Interpolates the accumulated rotation to the desired direction
+	FRotator CurrentRotation = Controller->GetControlRotation();
+	FRotator InterpolatedRotation = FMath::RInterpTo(CurrentRotation, TargetControlRotation, GetWorld()->GetDeltaSeconds(), InterpControlRotation);
+	Controller->SetControlRotation(InterpolatedRotation);
+
+	//	Interp from Current Roll to Target Roll
+	CurrentCameraRoll = FMath::FInterpTo(CurrentCameraRoll, CameraRollTarget, GetWorld()->GetDeltaSeconds(), LeanInterpSpeed);
+	
+	//	Sets the relative rotation to the camera
+	FRotator CameraRotation = CameraBoom->GetRelativeRotation();
+	CameraRotation.Roll = CurrentCameraRoll;
+	CameraBoom->SetRelativeRotation(CameraRotation);
+}
+
+/*	This function changes the camera FOV depending on the character movement and stamina state <-Called on Tick-> */
+void APlayerCharacterC::UpdateCameraFOV()
+{
+	//	Set current FOV
+	CurrentFOV = FollowCamera->FieldOfView;
+	//	Target
+	float TargetFOV;
+	
+	switch (FieldOfViewState)
+	{	//	90.0f
+	case EFieldOfViewState::Normal:
+		TargetFOV = NormalFOV;
+		break;	//	100.0f
+	case EFieldOfViewState::Running:
+		TargetFOV = RunningFOV;
+		break;	//	85.0f
+	case EFieldOfViewState::Fatigued:
+		TargetFOV = FatiguedFOV;
+		break;
+	}	//	Set the FOV depending the FOV state (Interpolates from the current FOV to the target FOV. Interp Speed can be modified)
+	FollowCamera->FieldOfView = FMath::FInterpTo(CurrentFOV, TargetFOV, GetWorld()->GetDeltaSeconds(), InterpFOVSpeed);
+}
+
