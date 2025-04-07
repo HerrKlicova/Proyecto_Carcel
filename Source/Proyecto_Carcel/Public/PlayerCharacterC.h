@@ -11,7 +11,6 @@
 ///
 ///
 ///	class forward declarations
-class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
@@ -43,6 +42,14 @@ enum class EMovementState : uint8
 	Walking UMETA(DisplayName = "Walking"),
 	Running UMETA(DisplayName = "Running"),
 };
+
+UENUM(Blueprintable)
+enum class EFieldOfViewState : uint8
+{
+	Normal	UMETA(DisplayName = "Normal"),
+	Running	UMETA(DisplayName = "Running"),
+	Fatigued UMETA(DisplayName = "Fatigued"),
+};
 ///
 //////////////////////////////////////////////////////
 ///
@@ -59,13 +66,12 @@ public IHealeableInterface
 	///////////////////////////////////////////////////
 	///
 	///
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
-
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* SkeletalMesh = GetMesh();
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -104,11 +110,12 @@ public IHealeableInterface
 	///	WIDGET	WIDGET	WIDGET
 	///////////////////////////////////////////////////
 	///
-	///	Add variables for creating widget
+	///	
 public:
+	//	Declares a variable UUserWidget
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UUserWidget> MainHUDWidgetClass;
-	
+	//	Declares a variable for instancing the HUD
 	UPROPERTY()
 	UMainHUDWidget* MainHUDWidgetInstance;
 	///
@@ -123,6 +130,7 @@ public:
 	///
 	/// Begin Play function */
 	virtual void BeginPlay() override;
+	/// Event Tick function */
 	virtual void Tick(float DeltaTime) override;
 	///
 	///
@@ -137,13 +145,34 @@ public:
 	FTimerHandle StaminaTimerHandle;
 	///
 	///
-	///	Character's stamina and movement states */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
+	///	Character's stamina, movement and Camera FOV states */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|ENUMS")
 	EStaminaState StaminaState = EStaminaState::Normal;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|ENUMS")
 	EMovementState MovementState = EMovementState::Standing;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
+	EFieldOfViewState FieldOfViewState = EFieldOfViewState::Normal;
+	//
+	//////////////////////////////////////////////////////
+	///	CAMERA	CAMERA	CAMERA
+	///	CAMERA	CAMERA	CAMERA
+	/////////////////////////////////////////////////////
+	///
+	//	Camera FOV variables
+	float CurrentFOV;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
+	float NormalFOV = 90.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
+	float RunningFOV = 100.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
+	float FatiguedFOV = 85.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
+	float InterpFOVSpeed = 5.0;
+
+	//	Control rotation for intertia look
+	FRotator TargetControlRotation;
 	///
 	///
 	///	Character's Max Movement Speeds */
@@ -156,22 +185,22 @@ public:
 	///
 	///
 	///	Character's Stamina State Values */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
 	float characterStamina = 100.0f;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
 	float characterStaminaExhausted = 0.0f;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
 	float characterStaminaTreshold = 30.0f;
 	///
 	///
 	///	Character's Drain and Recovery Stamina Values */
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|Modifiers")
 	float staminaToDrainRunning = 10.0f;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|Modifiers")
 	float staminaToRecoverWalkingFatigued = 5.0f;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|Modifiers")
 	float staminaToRecoverWalkingNotFatigued = 10.0f;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|Modifiers")
 	float staminaToRecoverNotWalkingNotFatigued = 15.0f;
 	///
 	///
@@ -201,10 +230,10 @@ public:
 	///
 	///
 	///	current health
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, Category = "Health")
 	float CurrentHealth = 100.0f;
 	///	max health
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite, Category = "Health")
 	float MaxHealth = 100.0f;
 	///
 	///
@@ -213,11 +242,13 @@ public:
 	///	HEALTH-SYSTEM-FUNCT	HEALTH-SYSTEM-FUNCT
 	///////////////////////////////////////////////////////////
 	///
+	
 	///	Define the Interface Function from the DamageableInterface
 	virtual void ApplyDamage_Implementation(float DamageAmount) override;
 	///	Define the Interface Function from the HealeableInterface
 	virtual void ApplyHealing_Implementation(float HealAmount) override;
 	///
+
 	///
 	//////////////////////////////////////////////////////////////
 	///	INTERACT-SYSTEM-VARS	INTERACT-SYSTEM-VARS
@@ -225,17 +256,18 @@ public:
 	//////////////////////////////////////////////////////////////
 	///
 	///
-	///	Creates the channel throught the LineTraces will be thrown?
+	///	Declares the channel throught the Interact RayCast will be thrown
 	UPROPERTY(EditAnywhere, Category = "Interact")
 	TEnumAsByte<ECollisionChannel> InteractionChannelProperty = ECC_GameTraceChannel2;
-
+	
+	///	Declares the channel throught the Detection RayCast will be thrown
 	UPROPERTY(EditAnywhere, Category = "Interact")
 	TEnumAsByte<ECollisionChannel> DetecitonChannelProperty = ECC_GameTraceChannel3;
 	
 	//	Timer for detection LineTrace
 	FTimerHandle DetectionTimerHandle;
 
-	//	save the last detected actor for the HUD implementation
+	//	save the last detected actor for the HUD implementation (weak pointer cause is not essential for character)
 	UPROPERTY()
 	TWeakObjectPtr<AActor>LastDetectedActor = nullptr;
 	///
@@ -247,10 +279,10 @@ public:
 	///
 	///
 	
-	//	Function that executes a debug line from camera forwards and detects actors
+	//	Function that executes a Line Trace from camera forwards and interacts with actors who have interface
 	UFUNCTION(BlueprintCallable, Category = "Interact")
 	void InteractLineTrace();
-
+	//	Function that executes a Line Trace from camera forwards and detects actors who have interface
 	UFUNCTION(Blueprintable, Category = "Interact")
 	void DetectionLineTrace();
 
@@ -289,9 +321,6 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 public:
-
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	

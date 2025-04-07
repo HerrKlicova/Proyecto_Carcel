@@ -4,7 +4,6 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "Engine/World.h"
@@ -16,7 +15,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
 #include "Components/InputComponent.h"
-#include "EntitySystem/MovieSceneEntitySystemRunner.h"
 ////
 ///
 //	Custom log category
@@ -26,18 +24,20 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 //// Sets default values (CONSTRUCTOR)
 APlayerCharacterC::APlayerCharacterC()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	
 	//Inicializar el tamaño de la cápsula de personaje
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 	
 	//No rotar cuando el controlador rote
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
-
+	
 	//Configurar movimiento del character
 	GetCharacterMovement()->bOrientRotationToMovement = true; //el jugador se mueve en la direccion al input...
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); //a esta rotación
-
+	
 	//Ajustes básicos del character movement 
 	GetCharacterMovement()->JumpZVelocity = 700.0f;
 	GetCharacterMovement()->AirControl = 0.35f;
@@ -46,17 +46,11 @@ APlayerCharacterC::APlayerCharacterC()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.0f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	//Crear el brazo (Se acerca al jugador si detecta colisión)
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f; //La camara se quedará a esta distancia detrás del jugador
-	CameraBoom->bUsePawnControlRotation = true; //Rotar el brazo en base al controlador
-
 	//Crear camara que sigue al jugador
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>("FollowCamera");
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); //Enganchar la camara al final del camera boom
-	FollowCamera->bUsePawnControlRotation = false; //La camara no rota de forma relativa al brazo
-
+	FollowCamera->SetupAttachment(SkeletalMesh, TEXT("headSocket")); //	la cámara hereda en la jerarquía del SKM
+	FollowCamera->bUsePawnControlRotation = true;
+	
 	// Nota: Las referencias al skeletal mesh y el anim blueprint en el componente mesh (heredado de Character)
 	// son puestas en el blueprint asset derivado llamado ThirdPersonCharacter (para evitar referencias de contenido directas)
 	
@@ -125,8 +119,35 @@ void APlayerCharacterC::BeginPlay()
 }
 //
 void APlayerCharacterC::Tick(float DeltaTime)
-{
+{	//	Tick (Camera FOV)
 	Super::Tick(DeltaTime);
+
+	//	Set current FOV
+	CurrentFOV = FollowCamera->FieldOfView;
+	//	Target
+	float TargetFOV;
+	
+	switch (FieldOfViewState)
+	{	//	90.0f
+	case EFieldOfViewState::Normal:
+		TargetFOV = NormalFOV;
+		break;	//	100.0f
+	case EFieldOfViewState::Running:
+		TargetFOV = RunningFOV;
+		break;	//	85.0f
+	case EFieldOfViewState::Fatigued:
+		TargetFOV = FatiguedFOV;
+		break;
+	}	//	Set the FOV depending the FOV state (Interpolates from the current FOV to the target FOV. Interp Speed can be modified)
+	FollowCamera->FieldOfView = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, InterpFOVSpeed);
+
+	//	Interpolates the accumulated rotation to the desired direction
+	if (Controller)
+	{
+		FRotator CurrentRotation = Controller->GetControlRotation();
+		FRotator InterpolatedRotation = FMath::RInterpTo(CurrentRotation, TargetControlRotation, DeltaTime, 20.0f);
+		Controller->SetControlRotation(InterpolatedRotation);
+	}
 }
 //
 ///
@@ -209,8 +230,6 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
 
-		//if character is moving in any direction, it will face towards look direction
-		GetCharacterMovement()->bOrientRotationToMovement = false;
 		//	enum state to Walking
 		MovementState = EMovementState::Walking;
 	}
@@ -220,26 +239,26 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 //		player stops moving...
 void APlayerCharacterC::MovementCompleted()
 {
-	//so will stop facing towards look direction
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-
 	MovementState = EMovementState::Standing;
 }
 //
 ///
-////	player stops looking
+////	player move the mouse
 void APlayerCharacterC::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
-	{
+	if (Controller)
+	{	//	accumulates the rotation in TargetControlRotation
+		TargetControlRotation.Yaw += LookAxisVector.X;
+		TargetControlRotation.Pitch = FMath::Clamp(TargetControlRotation.Pitch + (LookAxisVector.Y * 1), -85.f, 85.f);
+		
 		// add yaw and pitch input to controller and invert Y Axis
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y*-1);
+		//AddControllerYawInput(LookAxisVector.X);
+		//AddControllerPitchInput(LookAxisVector.Y*-1);
 	}
-	
+
 	
 }
 ////
@@ -247,7 +266,7 @@ void APlayerCharacterC::Look(const FInputActionValue& Value)
 //		player starts running
 void APlayerCharacterC::Run(const FInputActionValue& Value)
 {	///	if movement state enum is walking...
-	if (MovementState == EMovementState::Walking)
+	if (MovementState == EMovementState::Walking && GetVelocity().SizeSquared() > 0.0f)
 	{	///	can start running
 		MovementState = EMovementState::Running;
 		
@@ -259,17 +278,21 @@ void APlayerCharacterC::Run(const FInputActionValue& Value)
         		if (StaminaState == EStaminaState::Exhausted)
         		{	//	stops moving
         			MovementState = EMovementState::Standing;
+        			//FieldOfViewState = EFieldOfViewState::Normal;
         			GetCharacterMovement()->MaxWalkSpeed = characterWalkSpeed;
         		}	//	if fatigued...
         		else if (StaminaState == EStaminaState::Fatigued)
         		{	//	reduces speed
+        			FieldOfViewState = EFieldOfViewState::Fatigued;
         			GetCharacterMovement()->MaxWalkSpeed = characterSprintSpeedFatigued;
         		}	//	if normal
         		else
         		{	//	runs
+        			FieldOfViewState = EFieldOfViewState::Running;
         			GetCharacterMovement()->MaxWalkSpeed = characterSprintSpeed;
         		}
         	}
+		
 	}
 }
 //
@@ -284,6 +307,16 @@ void APlayerCharacterC::StopRunning(const FInputActionValue& Value)
 		if (MovementState != EMovementState::Running)
         	{	//	starts walking
 				MovementState = EMovementState::Walking;
+
+				if (StaminaState == EStaminaState::Normal)
+				{
+					FieldOfViewState = EFieldOfViewState::Normal;
+				}
+				else
+				{
+					FieldOfViewState = EFieldOfViewState::Fatigued;
+				}
+			
         		GetCharacterMovement()->MaxWalkSpeed = characterWalkSpeed;
         	}
 	}
@@ -313,6 +346,7 @@ void APlayerCharacterC::StaminaDrainAndRecovery()
 		else if (characterStamina < characterStaminaTreshold)
 		{	//	is fatigued
 			StaminaState = EStaminaState::Fatigued;
+			FieldOfViewState = EFieldOfViewState::Fatigued;
 		}	//	if character stamina greater than 30
 		else
 		{	//	is normal
@@ -348,8 +382,18 @@ void APlayerCharacterC::StaminaDrainAndRecovery()
 	if (characterStamina >= characterStaminaTreshold)
 	{
 		StaminaState = EStaminaState::Normal;
+
+		if (MovementState != EMovementState::Running)
+		{
+			FieldOfViewState = EFieldOfViewState::Normal;
+		}
+		else
+		{
+			FieldOfViewState = EFieldOfViewState::Running;
+		}
 	}		
 	}
+
 	////
 	///
 	//	implemented widget stamina bar functionality
@@ -505,8 +549,6 @@ void APlayerCharacterC::DetectionLineTrace()
 		LastDetectedActor = nullptr;
 		MainHUDWidgetInstance->HideInteractionMessage();
 	}
-	DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Yellow, false, 0.1f, 0, 1.0f);
-
-		
+	//DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Yellow, false, 0.1f, 0, 1.0f);
 	
 }
