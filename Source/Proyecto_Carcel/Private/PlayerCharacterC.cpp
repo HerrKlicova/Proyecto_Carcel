@@ -69,7 +69,7 @@ void APlayerCharacterC::BeginPlay()
 	Super::BeginPlay();
 	///
 	///
-	//Create HUD Widget to Viewport
+	/**	Create HUD Widget to Viewport	**/
 	if (MainHUDWidgetClass)
 	{
 		UUserWidget* CreatedWidget = CreateWidget<UUserWidget>(GetWorld(), MainHUDWidgetClass);
@@ -84,8 +84,10 @@ void APlayerCharacterC::BeginPlay()
 	}
 	///
 	///
-	///	Init Current Health with Max Health
+	/**	Init Current Health with Max Health	**/
 	CurrentHealth = MaxHealth;
+	
+	/**	Update HUD health bar with CurrentHealth variable **/
 	if (MainHUDWidgetInstance)
 	{
 		MainHUDWidgetInstance->UpdateHealthbar(CurrentHealth, MaxHealth);	
@@ -100,22 +102,24 @@ void APlayerCharacterC::BeginPlay()
 	}
 	///
 	///
-	//Timer for stamina Drain and Recovery
+	/**	Check if Player Character exists	**/
 	if (IsValid(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)))
-	{
+	{	/**	Init stamina timer 1.0f **/
 		GetWorldTimerManager().SetTimer(
-	TimerHandleStamina,
-	this,
-	&APlayerCharacterC::StaminaDrainAndRecovery,
-	1.0f,
-	true
-	);
+		StaminaTimerHandle,
+		this,
+		&APlayerCharacterC::StaminaDrainAndRecovery,
+		1.0f,
+		true
+		);
+		/**	Init detection timer 0.1f **/
 		GetWorldTimerManager().SetTimer(
-			DetectionTimerHandle,
-			this,
-			&APlayerCharacterC::DetectionLineTrace,
-			0.5f,
-			true);
+    	DetectionTimerHandle,
+    	this,
+    	&APlayerCharacterC::DetectionLineTrace,
+    	0.1f,
+    	true
+    	);	
 	}
 
 }
@@ -248,7 +252,7 @@ void APlayerCharacterC::Run(const FInputActionValue& Value)
 		MovementState = EMovementState::Running;
 		
 		// input is a Digital(Bool)
-		bIsCharacterRunning = Value.Get<bool>();
+		bool bIsCharacterRunning = Value.Get<bool>();
         	
         	if (Controller != nullptr)
         	{	//	if exhausted...
@@ -273,7 +277,7 @@ void APlayerCharacterC::Run(const FInputActionValue& Value)
 ////	player stops running
 void APlayerCharacterC::StopRunning(const FInputActionValue& Value)
 {
-	bIsCharacterRunning = Value.Get<bool>();
+	bool bIsCharacterRunning = Value.Get<bool>();
 	
 	if (Controller != nullptr)
 	{	//	if is NOT running 
@@ -484,17 +488,25 @@ void APlayerCharacterC::DetectionLineTrace()
 	if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
 	{	//	save the Hit Actor on a AActor pointer
 		AActor* CurrentActor = Hit.GetActor();
+		
 		//	if the detected actor is not equal to the last detected actor...
-		if (CurrentActor != LastDetectedActor.Get())
+		if (CurrentActor != LastDetectedActor.Get() && CurrentActor->Implements<UInteractuableInterface>())
 		{	//	...last detected actor will become the current actor
 			LastDetectedActor = CurrentActor;
+			
+			/**	Show on HUD interaction message	using the interaction interface function **/
+			FText Message = IInteractuableInterface::Execute_GetInteractionText(CurrentActor);
+			MainHUDWidgetInstance->ShowInteractionMessage(Message);
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Emerald, FString::Printf(TEXT("Trace hit actor: %s"), *CurrentActor->GetName()));
 	}
 	//	if the detected actor is the same as the last detected actor...
 	else
 	{	//	...clean the last detected actor pointer
 		LastDetectedActor = nullptr;
+		MainHUDWidgetInstance->HideInteractionMessage();
 	}
 	DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Yellow, false, 0.1f, 0, 1.0f);
+
+		
+	
 }

@@ -23,7 +23,7 @@ AInteractuableActor::AInteractuableActor()
 void AInteractuableActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 // Called every frame
@@ -37,4 +37,8 @@ void AInteractuableActor::Interact_Implementation()
 {
 	Destroy();
 }
-
+//	Shows the item name on creen. Called on detection function
+FText AInteractuableActor::GetInteractionText_Implementation()
+{
+	return ItemName;
+}

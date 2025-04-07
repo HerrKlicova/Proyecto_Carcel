@@ -22,6 +22,11 @@ class PROYECTO_CARCEL_API IInteractuableInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	/**	Interact function	**/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
 	void Interact();
+	
+	/**	Show Item Name on HUD function	**/
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	FText GetInteractionText();
 };

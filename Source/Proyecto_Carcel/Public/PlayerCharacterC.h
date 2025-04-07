@@ -134,7 +134,7 @@ public:
 	///
 	///
 	/// Timer Handle Variable */
-	FTimerHandle TimerHandleStamina;
+	FTimerHandle StaminaTimerHandle;
 	///
 	///
 	///	Character's stamina and movement states */

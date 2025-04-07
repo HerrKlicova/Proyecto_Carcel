@@ -33,10 +33,15 @@ void UMainHUDWidget::ShowInteractionMessage(FText Object)
 	if (InteractMessage)
 	{
 		InteractMessage->SetText(Object);
+		InteractMessage->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
 void UMainHUDWidget::HideInteractionMessage()
 {
+	if (InteractMessage)
+	{
+		InteractMessage->SetVisibility(ESlateVisibility::Hidden);
+	}
 }
 

@@ -18,14 +18,22 @@ public:
 	// Sets default values for this actor's properties
 	AInteractuableActor();
 
-	UFUNCTION(BlueprintCallable, Category = "Interact")
-	virtual void Interact_Implementation() override;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StaticMesh")
 	UStaticMeshComponent* StaticMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision")
 	UBoxComponent* BoxComponent;
+	
+	//	Custom name for interactuable actors
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interact")
+	FText ItemName;
+	//	Implement interaction interface function
+	UFUNCTION(BlueprintCallable, Category = "Interact")
+	virtual void Interact_Implementation() override;
+	//	Implement Show interaction text function
+	UFUNCTION(BlueprintCallable, Category = "Interact")
+	virtual FText GetInteractionText_Implementation() override;
 	
 protected:
 	// Called when the game starts or when spawned
