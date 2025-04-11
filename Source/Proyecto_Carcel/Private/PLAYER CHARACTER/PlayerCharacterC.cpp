@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
+#include "IDetailTreeNode.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "INTERFACES/InteractuableInterface.h"
@@ -17,6 +18,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
 #include "Components/InputComponent.h"
+#include "GeometryCollection/GeometryCollectionParticlesData.h"
 ////
 ///
 //	Custom log category
@@ -61,6 +63,7 @@ APlayerCharacterC::APlayerCharacterC()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = true;
 
+	//	init inventory component
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 
 	
@@ -73,8 +76,7 @@ APlayerCharacterC::APlayerCharacterC()
 void APlayerCharacterC::BeginPlay()
 {
 	Super::BeginPlay();
-	///
-	///
+
 	/**	Create HUD Widget to Viewport	**/
 	if (MainHUDWidgetClass)
 	{
@@ -88,8 +90,7 @@ void APlayerCharacterC::BeginPlay()
 			CastedUserWidget->AddToViewport();
 		}
 	}
-	///
-	///
+
 	/**	Init Current Health with Max Health	**/
 	CurrentHealth = MaxHealth;
 	
@@ -124,34 +125,6 @@ void APlayerCharacterC::BeginPlay()
     	true
     	);
 	}
-	//	Test the inventory component
-	/* if (InventoryComponent)
-	{
-		//	Create a test syringe setting his ID, Name, ItemType, Effect and Icon
-		FItemData Syringe;
-		Syringe.ItemID = FName("Syringe_01");
-		Syringe.ItemName = "Stamina Syringe";
-		Syringe.ItemType = EItemType::Consumable;
-		Syringe.EffectValue = 25.0f;
-		UTexture2D* SyringeIcon = LoadObject<UTexture2D>(nullptr, TEXT("/Game/08_UserWidgets/Icons/Icon_Syringe"));
-		Syringe.ItemIcon = SyringeIcon;
-		
-		//	Add the item to the inventory and update the Widget with the icon
-		InventoryComponent->AddItem(Syringe);
-		MainHUDWidgetInstance->UpdateInventoryDisplay(InventoryComponent->GetInventory());
-
-		// Create a test key
-		UTexture2D* KeyIcon = LoadObject<UTexture2D>(nullptr, TEXT("/Game/08_UserWidgets/Icons/Icon_Keys"));
-		FItemData Key;
-		Key.ItemID = FName("Key_01");
-		Key.ItemName = "Prision Key";
-		Key.ItemType = EItemType::Key;
-		Key.ItemIcon = KeyIcon;
-
-		InventoryComponent->AddItem(Key);
-		MainHUDWidgetInstance->UpdateInventoryDisplay(InventoryComponent->GetInventory());
-	}
-	*/	
 }
 
 
@@ -216,6 +189,13 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 		//Interact
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Interact);
+
+		//Select item from the inventory
+		EnhancedInputComponent->BindAction(SelectSlot0Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot0);
+		EnhancedInputComponent->BindAction(SelectSlot1Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot1);
+		EnhancedInputComponent->BindAction(SelectSlot2Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot2);
+		EnhancedInputComponent->BindAction(SelectSlot3Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot3);
+		EnhancedInputComponent->BindAction(SelectSlot4Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot4);
 	}
 	else
 	{
@@ -621,23 +601,48 @@ void APlayerCharacterC::UpdateCameraFOV()
 	FollowCamera->FieldOfView = FMath::FInterpTo(CurrentFOV, TargetFOV, GetWorld()->GetDeltaSeconds(), InterpFOVSpeed);
 }
 
+/* Define Select Slot Function and call Handle Slot Selection with the index depending on the input */
+void APlayerCharacterC::SelectSlot0() {HandleSlotSelection(0);}
+void APlayerCharacterC::SelectSlot1() {HandleSlotSelection(1);}
+void APlayerCharacterC::SelectSlot2() {HandleSlotSelection(2);}
+void APlayerCharacterC::SelectSlot3() {HandleSlotSelection(3);}
+void APlayerCharacterC::SelectSlot4() {HandleSlotSelection(4);}
 
-
-
-//	TESTING	TESTING	TESTING	TESTING
-void APlayerCharacterC::TESTUseItemSlot0()
+//	 Use the selected item depending on the input index.
+void APlayerCharacterC::HandleSlotSelection(int32 SlotIndex)
 {
-	if (!InventoryComponent) return;
+	//	check if the inventory component and the HUD exist
+	if (!InventoryComponent || !MainHUDWidgetInstance) return;
 
+	UE_LOG(LogTemp, Display, TEXT("SlotIndex = %d"), SlotIndex);
+	//	Init and array called Items with the GetInventory() function from the InventoryComponent
 	const TArray<FItemData>& Items = InventoryComponent->GetInventory();
 	
-	if (Items.IsValidIndex(0))
+	//	check if the index is valid
+	if (Items.IsValidIndex(SlotIndex))
 	{
-		InventoryComponent->UseItem(0);
-		MainHUDWidgetInstance->UpdateInventoryDisplay(Items);
-	}
+		//	define the selected inventory slot with the SlotIndex
+		SelectedInventorySlot = SlotIndex;
+		
+		//	Init an array calle Item with the index items value
+		const FItemData& Item = Items[SlotIndex];
+		
+		//	check if the selected item is consumable or a key
+		if (Item.ItemType == EItemType::Consumable || Item.ItemType == EItemType::Key)
+		{
+			//	if so, show an interaction message on HUD with the ItemName
+			FString MessageText = FString::Printf(TEXT("Pulsa F para usar %s"), *Item.ItemName);
+			MainHUDWidgetInstance->ShowInventoryMessage(FText::FromString(MessageText));
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("%s"), *Item.ItemName));
+		}
+		else
+		{	//	if not, just dont show anything
+			MainHUDWidgetInstance->HideInventoryMessage();
+		}
+	}	//	if the index not valid...
 	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("No hay objeto en el slot 0"));
+	{	//	The selected slot goes down to -1 (means is selecting nothing) and hides the interaction message
+		SelectedInventorySlot = -1;	
+		MainHUDWidgetInstance->HideInventoryMessage(); 
 	}
 }

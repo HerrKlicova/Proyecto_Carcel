@@ -14,7 +14,7 @@ enum class EItemType : uint8
 	Consumable	UMETA(DisplayName = "Consumable"),
 };
 
-//	STRUCT for the individual itemn on the inventary
+//	STRUCT for the individual item on the inventary
 
 USTRUCT(BlueprintType)
 struct FItemData

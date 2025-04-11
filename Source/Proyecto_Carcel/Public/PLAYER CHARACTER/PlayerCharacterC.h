@@ -5,6 +5,7 @@
 #include "INTERFACES/DamageableInterface.h"
 #include "INTERFACES/HealeableInterface.h"
 #include "CoreMinimal.h"
+#include "InputAction.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "PlayerCharacterC.generated.h"
@@ -54,6 +55,9 @@ enum class EFieldOfViewState : uint8
 ///
 //////////////////////////////////////////////////////
 ///
+///
+
+
 UCLASS()
 class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter,
 public IDamageableInterface,
@@ -198,9 +202,6 @@ public:
 	float MaxLeanAngle = 5.0f;
 	float LeanInterpSpeed = 5.0f;
 	
-	
-	
-	
 	///	Character's Max Movement Speeds */
 	UPROPERTY()
 	float characterSprintSpeed = 800.0f;
@@ -311,12 +312,21 @@ public:
 	//	Function that executes a Line Trace from camera forwards and detects actors who have interface
 	UFUNCTION(Blueprintable, Category = "Interact")
 	void DetectionLineTrace();
+	//	Init SelectedInventorySlot on unselected
+	UPROPERTY()
+	int32 SelectedInventorySlot = -1;
 
-
-	//	TESTING	TESTING	TESTING	TESTING
-	UFUNCTION(BlueprintCallable)
-	void TESTUseItemSlot0();
-	
+	//	Input for selecting item from inventory
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SelectSlot0Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SelectSlot1Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SelectSlot2Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SelectSlot3Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SelectSlot4Action;
 protected:
 	/////////////////////////////////////////////////////
 	///	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC
@@ -343,8 +353,17 @@ protected:
 
 	/** Called for interaction input */
 	void Interact(const FInputActionValue& Value);
-
-
+	
+	/*	Called for selecting inventory items	*/
+	void HandleSlotSelection(int32 SlotIndex);
+	
+	//	Functions for selecting items on the inventory called
+	void SelectSlot0();
+	void SelectSlot1();
+	void SelectSlot2();
+	void SelectSlot3();
+	void SelectSlot4();
+	
 	/* Detect if controller has changed (inherited from AActor)	*/
 	virtual void NotifyControllerChanged() override;
 

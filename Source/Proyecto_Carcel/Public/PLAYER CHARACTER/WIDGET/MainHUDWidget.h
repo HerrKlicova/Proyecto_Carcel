@@ -25,7 +25,12 @@ public:
 	UProgressBar* HealthBar;
 
 	UPROPERTY(BlueprintReadOnly, Category = "HUD", meta = (BindWidget))
-	UTextBlock* InteractMessage;
+	UTextBlock* WorldInteractMessage;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "HUD", meta = (BindWidget))
+	UTextBlock* InventoryInteractMessage;
+
+	
 //**	
 //**
 	//	declare variables binded to the Inventory Slots images
@@ -59,5 +64,11 @@ public:
 
 	UFUNCTION()
 	void HideInteractionMessage();
+
+	UFUNCTION()
+	void ShowInventoryMessage(FText Message);
+
+	UFUNCTION()
+	void HideInventoryMessage();
 //**
 };

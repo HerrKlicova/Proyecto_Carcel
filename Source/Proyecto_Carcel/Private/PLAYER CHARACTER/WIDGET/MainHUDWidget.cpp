@@ -30,18 +30,18 @@ void UMainHUDWidget::UpdateHealthbar(float Current, float Max)
 
 void UMainHUDWidget::ShowInteractionMessage(FText Object)
 {
-	if (InteractMessage)
+	if (WorldInteractMessage)
 	{
-		InteractMessage->SetText(Object);
-		InteractMessage->SetVisibility(ESlateVisibility::Visible);
+		WorldInteractMessage->SetText(Object);
+		WorldInteractMessage->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
 void UMainHUDWidget::HideInteractionMessage()
 {
-	if (InteractMessage)
+	if (WorldInteractMessage)
 	{
-		InteractMessage->SetVisibility(ESlateVisibility::Hidden);
+		WorldInteractMessage->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 
@@ -67,5 +67,21 @@ void UMainHUDWidget::UpdateInventoryDisplay(const TArray<FItemData>& InventoryDa
 		{
 			SlotImages[i]->SetBrushFromTexture(nullptr);
 		}
+	}
+}
+
+void UMainHUDWidget::ShowInventoryMessage(FText Message)
+{
+	if (InventoryInteractMessage)
+	{
+		InventoryInteractMessage->SetText(Message);
+		InventoryInteractMessage->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+void UMainHUDWidget::HideInventoryMessage()
+{
+	if (InventoryInteractMessage)
+	{
+		InventoryInteractMessage->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
