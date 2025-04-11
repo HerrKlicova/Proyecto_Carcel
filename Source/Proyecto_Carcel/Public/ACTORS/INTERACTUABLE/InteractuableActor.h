@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "InteractuableInterface.h"
+#include "INTERFACES/InteractuableInterface.h"
+#include "PLAYER CHARACTER/COMPONENTS/ItemTypes.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "InteractuableActor.generated.h"
@@ -19,6 +20,7 @@ public:
 	AInteractuableActor();
 
 	
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StaticMesh")
 	UStaticMeshComponent* StaticMesh;
 
@@ -28,9 +30,28 @@ public:
 	//	Custom name for interactuable actors
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interact")
 	FText ItemName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	FName ItemID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	FString ItemNames;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	EItemType ItemType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	UTexture2D* ItemIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	float EffectValue;
+	
 	//	Implement interaction interface function
 	UFUNCTION(BlueprintCallable, Category = "Interact")
 	virtual void Interact_Implementation() override;
+
+	virtual FItemData GetItemData_Implementation() override;
+	
 	//	Implement Show interaction text function
 	UFUNCTION(BlueprintCallable, Category = "Interact")
 	virtual FText GetInteractionText_Implementation() override;

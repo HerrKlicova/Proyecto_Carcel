@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "InteractuableActor.h"
+#include "ACTORS/INTERACTUABLE/InteractuableActor.h"
 
 // Sets default values
 AInteractuableActor::AInteractuableActor()
@@ -37,6 +37,19 @@ void AInteractuableActor::Interact_Implementation()
 {
 	Destroy();
 }
+
+FItemData AInteractuableActor::GetItemData_Implementation()
+{
+	FItemData ClassData;
+	ClassData.ItemID = ItemID;
+	ClassData.ItemName = ItemNames;
+	ClassData.ItemType = ItemType;
+	ClassData.ItemIcon = ItemIcon;
+	ClassData.EffectValue = EffectValue;
+	
+	return ClassData;
+}
+
 //	Shows the item name on creen. Called on detection function
 FText AInteractuableActor::GetInteractionText_Implementation()
 {

@@ -2,8 +2,8 @@
 ///
 ///
 ///	libraries
-#include "DamageableInterface.h"
-#include "HealeableInterface.h"
+#include "INTERFACES/DamageableInterface.h"
+#include "INTERFACES/HealeableInterface.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
@@ -80,6 +80,10 @@ public IHealeableInterface
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
+
+	/** Inventory Component **/
+	UPROPERTY(VisibleAnywhere)
+	class UInventoryComponent* InventoryComponent;
 	///
 	///
 	///////////////////////////////////////////////////
@@ -124,7 +128,6 @@ public:
 	UMainHUDWidget* MainHUDWidgetInstance;
 	///
 	///
-public:
 	///
 	///
 	/// Sets default values for this character's properties (constructor) */
@@ -309,6 +312,10 @@ public:
 	UFUNCTION(Blueprintable, Category = "Interact")
 	void DetectionLineTrace();
 
+
+	//	TESTING	TESTING	TESTING	TESTING
+	UFUNCTION(BlueprintCallable)
+	void TESTUseItemSlot0();
 	
 protected:
 	/////////////////////////////////////////////////////
@@ -336,6 +343,7 @@ protected:
 
 	/** Called for interaction input */
 	void Interact(const FInputActionValue& Value);
+
 
 	/* Detect if controller has changed (inherited from AActor)	*/
 	virtual void NotifyControllerChanged() override;

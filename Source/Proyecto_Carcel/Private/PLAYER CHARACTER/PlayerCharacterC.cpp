@@ -1,5 +1,5 @@
 //	includes
-#include "PlayerCharacterC.h"
+#include "PLAYER CHARACTER/PlayerCharacterC.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,8 +10,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
-#include "InteractuableInterface.h"
-#include "MainHUDWidget.h"
+#include "INTERFACES/InteractuableInterface.h"
+#include "PLAYER CHARACTER/COMPONENTS/InventoryComponent.h"
+#include "PLAYER CHARACTER/WIDGET/MainHUDWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
@@ -59,6 +60,8 @@ APlayerCharacterC::APlayerCharacterC()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>("FollowCamera");
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = true;
+
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 
 	
 	/** Nota: Las referencias al skeletal mesh y el anim blueprint en el componente mesh (heredado de Character)
@@ -121,7 +124,37 @@ void APlayerCharacterC::BeginPlay()
     	true
     	);
 	}
+	//	Test the inventory component
+	/* if (InventoryComponent)
+	{
+		//	Create a test syringe setting his ID, Name, ItemType, Effect and Icon
+		FItemData Syringe;
+		Syringe.ItemID = FName("Syringe_01");
+		Syringe.ItemName = "Stamina Syringe";
+		Syringe.ItemType = EItemType::Consumable;
+		Syringe.EffectValue = 25.0f;
+		UTexture2D* SyringeIcon = LoadObject<UTexture2D>(nullptr, TEXT("/Game/08_UserWidgets/Icons/Icon_Syringe"));
+		Syringe.ItemIcon = SyringeIcon;
+		
+		//	Add the item to the inventory and update the Widget with the icon
+		InventoryComponent->AddItem(Syringe);
+		MainHUDWidgetInstance->UpdateInventoryDisplay(InventoryComponent->GetInventory());
+
+		// Create a test key
+		UTexture2D* KeyIcon = LoadObject<UTexture2D>(nullptr, TEXT("/Game/08_UserWidgets/Icons/Icon_Keys"));
+		FItemData Key;
+		Key.ItemID = FName("Key_01");
+		Key.ItemName = "Prision Key";
+		Key.ItemType = EItemType::Key;
+		Key.ItemIcon = KeyIcon;
+
+		InventoryComponent->AddItem(Key);
+		MainHUDWidgetInstance->UpdateInventoryDisplay(InventoryComponent->GetInventory());
+	}
+	*/	
 }
+
+
 /**	Tick. Camera FOV and Camera Lag	**/
 void APlayerCharacterC::Tick(float DeltaTime)
 {	//	Tick (Camera FOV)
@@ -490,13 +523,22 @@ void APlayerCharacterC::InteractLineTrace()
 	//	if hit actor Is Valid...
 	if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
 	{
-		//	...create a variable with that actor...
+		//	...create a reference to that actor...
 		AActor* HitActor = Hit.GetActor();
 		//	...and check if implements InteractuableInterface...
 		if (HitActor->Implements<UInteractuableInterface>())
 		{
-			//	...execute the Interact function on the interactuable actor.
-			IInteractuableInterface::Execute_Interact(HitActor);
+			//	...execute the GetItemData function on the interactuable actor.
+			FItemData ItemData = IInteractuableInterface::Execute_GetItemData(HitActor);
+			//	if inventory component exists and add item to inventory using the ItemData provided by the interact actor
+			if (InventoryComponent && InventoryComponent->AddItem(ItemData))
+			{	//	check if HUD exists
+				if (MainHUDWidgetInstance)
+				{	//	update the HUD Icons with the Texture2D provided by the interactuable actor
+					MainHUDWidgetInstance->UpdateInventoryDisplay(InventoryComponent->GetInventory());
+				}	//	destroy actor on use.
+				HitActor->Destroy();
+			}
 		}
 	}
 }
@@ -579,3 +621,23 @@ void APlayerCharacterC::UpdateCameraFOV()
 	FollowCamera->FieldOfView = FMath::FInterpTo(CurrentFOV, TargetFOV, GetWorld()->GetDeltaSeconds(), InterpFOVSpeed);
 }
 
+
+
+
+//	TESTING	TESTING	TESTING	TESTING
+void APlayerCharacterC::TESTUseItemSlot0()
+{
+	if (!InventoryComponent) return;
+
+	const TArray<FItemData>& Items = InventoryComponent->GetInventory();
+	
+	if (Items.IsValidIndex(0))
+	{
+		InventoryComponent->UseItem(0);
+		MainHUDWidgetInstance->UpdateInventoryDisplay(Items);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("No hay objeto en el slot 0"));
+	}
+}

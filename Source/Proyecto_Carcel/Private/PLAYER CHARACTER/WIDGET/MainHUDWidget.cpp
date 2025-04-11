@@ -1,4 +1,4 @@
-#include "MainHUDWidget.h"
+#include "PLAYER CHARACTER/WIDGET/MainHUDWidget.h"
 #include "Math/UnrealMathUtility.h"
 
 
@@ -45,3 +45,27 @@ void UMainHUDWidget::HideInteractionMessage()
 	}
 }
 
+void UMainHUDWidget::UpdateInventoryDisplay(const TArray<FItemData>& InventoryData)
+{	//	create an array for itinerant the inventory slots
+	const TArray<UImage*> SlotImages = {
+	InventorySlot_0,
+	InventorySlot_1,
+	InventorySlot_2,
+	InventorySlot_3,
+	InventorySlot_4,
+};
+	//	create a for loop that itinerate all the inventory index and search if that index has an icon. If true, applies the selected texture on that slot.
+	for (int32 i = 0; i < SlotImages.Num(); i++)
+	{
+		if (!SlotImages[i]) continue;
+
+		if (InventoryData.IsValidIndex(i) && InventoryData[i].ItemIcon)
+		{
+			SlotImages[i]->SetBrushFromTexture(InventoryData[i].ItemIcon);
+		}
+		else
+		{
+			SlotImages[i]->SetBrushFromTexture(nullptr);
+		}
+	}
+}

@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-#include "TrapActorC.h"
-#include "DamageableInterface.h"
+#include "ACTORS/DAMAGGING/TrapActorC.h"
+#include "INTERFACES/DamageableInterface.h"
 
 
 // Sets default values

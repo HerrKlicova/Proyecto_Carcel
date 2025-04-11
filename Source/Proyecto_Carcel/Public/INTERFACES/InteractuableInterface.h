@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "PLAYER CHARACTER/COMPONENTS/ItemTypes.h"
 #include "InteractuableInterface.generated.h"
 
 // This class does not need to be modified.
@@ -25,6 +26,9 @@ public:
 	/**	Interact function	**/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
 	void Interact();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+	FItemData GetItemData();
 	
 	/**	Show Item Name on HUD function	**/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
