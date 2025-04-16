@@ -22,7 +22,7 @@ if not diff.strip():
 
 # Llamada a ChatGPT con la nueva API
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-4.1-mini",
     messages=[
         {"role": "system", "content": "Eres un desarrollador novato en Unreal Engine y C++. Resume este diff en un mensaje de commit completo: incluye primero una línea breve estilo Conventional Commit (por ejemplo: 'feat: ...' o 'fix: ...'), y luego una descripción detallada con viñetas o párrafos. El resultado será usado directamente en un commit Git en español."},
         {"role": "user", "content": f"Diff en la rama {branch}:\n{diff}"}

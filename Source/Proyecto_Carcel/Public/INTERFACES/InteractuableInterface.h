@@ -33,4 +33,5 @@ public:
 	/**	Show Item Name on HUD function	**/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
 	FText GetInteractionText();
+	
 };

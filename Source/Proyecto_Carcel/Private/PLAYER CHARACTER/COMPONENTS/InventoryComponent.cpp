@@ -4,6 +4,9 @@
 #include "PLAYER CHARACTER/COMPONENTS/InventoryComponent.h"
 
 #include "INTERFACES/HealeableInterface.h"
+#include "INTERFACES/IEquipableHandlerIterface.h"
+#include "INTERFACES/InteractuableInterface.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
@@ -75,6 +78,7 @@ void UInventoryComponent::UseItem(int32 SlotIndex)
 			if (Owner->GetClass()->ImplementsInterface(UHealeableInterface::StaticClass()))
 			{	//	execute the interface function on the player.
 				IHealeableInterface::Execute_ApplyHealing(Owner, Item.EffectValue);
+				UGameplayStatics::PlaySound2D(GetWorld(), Item.UseSound);
 			}
 		}
 		//	Remove the item if it is of single use.	
@@ -87,8 +91,16 @@ void UInventoryComponent::UseItem(int32 SlotIndex)
 		break;
 		//	just log the item on the output log... logic will be implemented
 	case EItemType::Weapon:
+		if (AActor* Owner = GetOwner())
+		{
+			if (Owner->GetClass()->ImplementsInterface(UIEquipableHandlerIterface::StaticClass()))
+			{
+				IIEquipableHandlerIterface::Execute_EquipItemFromClass(Owner, Item.ItemClass, Item);
+			}
+		}
+		break;
 	case EItemType::Tool:
-		UE_LOG(LogTemp, Warning, TEXT("Item type %d"), *Item.ItemName);
+		UE_LOG(LogTemp, Warning, TEXT("Item type %s"), *Item.ItemName);
 		break;
 		//	if in any case the item is not recognized, just output log
 	default:

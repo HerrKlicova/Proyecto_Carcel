@@ -49,6 +49,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Invetory", meta = (BindWidget))
 	UImage* InventorySlot_4;
 //**
+	//	declare a function that Updates the inventory Widget using the inventory data (update index)
 	UFUNCTION(BlueprintCallable)
 	void UpdateInventoryDisplay(const TArray<FItemData>& InventoryData);
 //**	

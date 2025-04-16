@@ -34,7 +34,12 @@ void AInteractuableActor::Tick(float DeltaTime)
 }
 
 void AInteractuableActor::Interact_Implementation()
-{
+{	//	Play sound at location on interacted (implemented on instances)
+	if (PickupSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
+	}
+	
 	Destroy();
 }
 
@@ -46,6 +51,7 @@ FItemData AInteractuableActor::GetItemData_Implementation()
 	ClassData.ItemType = ItemType;
 	ClassData.ItemIcon = ItemIcon;
 	ClassData.EffectValue = EffectValue;
+	ClassData.UseSound = UseSound;
 	
 	return ClassData;
 }

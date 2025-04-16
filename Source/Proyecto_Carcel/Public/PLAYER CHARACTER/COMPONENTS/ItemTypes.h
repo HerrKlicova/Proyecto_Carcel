@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "ItemTypes.generated.h"
 
+class USoundBase;
 //	ENUM for the different types of items that will be on the game
 UENUM(BlueprintType)
 enum class EItemType : uint8
@@ -32,7 +33,14 @@ struct FItemData
 	//	Icon that will be shown on the HUD
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	UTexture2D* ItemIcon;
+	//	Sound reproduced when item used
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	USoundBase* UseSound;
 	//	Value by defect for consumable objects like Health, Damage...
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	float EffectValue = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	TSubclassOf<AActor> ItemClass;
+	
 };

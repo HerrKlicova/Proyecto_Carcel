@@ -11,6 +11,7 @@
 #include "IDetailTreeNode.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
+#include "Weapon.h"
 #include "INTERFACES/InteractuableInterface.h"
 #include "PLAYER CHARACTER/COMPONENTS/InventoryComponent.h"
 #include "PLAYER CHARACTER/WIDGET/MainHUDWidget.h"
@@ -19,6 +20,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Components/InputComponent.h"
 #include "GeometryCollection/GeometryCollectionParticlesData.h"
+#include "UniversalObjectLocators/UniversalObjectLocatorUtils.h"
 ////
 ///
 //	Custom log category
@@ -45,7 +47,7 @@ APlayerCharacterC::APlayerCharacterC()
 	/**	Character Movement Basics **/ 
 	GetCharacterMovement()->JumpZVelocity = 700.0f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 300.0f;
+	GetCharacterMovement()->MaxWalkSpeed = characterWalkSpeed;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.0f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.0f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
@@ -138,6 +140,7 @@ void APlayerCharacterC::Tick(float DeltaTime)
 
 	/**	Calls the camera lag function **/
 	UpdateCameraLag();
+
 }
 //
 ///
@@ -190,6 +193,9 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		//Interact
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Interact);
 
+		//Use item from inventory
+		EnhancedInputComponent->BindAction(UseAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::UseInventoryItem);
+		
 		//Select item from the inventory
 		EnhancedInputComponent->BindAction(SelectSlot0Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot0);
 		EnhancedInputComponent->BindAction(SelectSlot1Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot1);
@@ -209,7 +215,6 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
-	
 	if (Controller != nullptr)
 	{
 		
@@ -229,6 +234,7 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 
 		//	enum state to Walking
 		MovementState = EMovementState::Walking;
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	}
 }
 ////
@@ -237,6 +243,7 @@ void APlayerCharacterC::Move(const FInputActionValue& Value)
 void APlayerCharacterC::MovementCompleted()
 {
 	MovementState = EMovementState::Standing;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 }
 //
 ///
@@ -251,6 +258,19 @@ void APlayerCharacterC::Look(const FInputActionValue& Value)
 		TargetControlRotation.Yaw += LookAxisVector.X;
 		TargetControlRotation.Pitch = FMath::Clamp(TargetControlRotation.Pitch + (LookAxisVector.Y * 1), -85.f, 85.f);
 
+		float ActorYaw = GetActorRotation().Yaw;
+
+		float YawDifference = FMath::FindDeltaAngleDegrees(ActorYaw, TargetControlRotation.Yaw);
+
+		float MaxYawOffset = 130.0f;
+
+		YawDifference = FMath::Clamp(YawDifference, -MaxYawOffset, MaxYawOffset);
+
+		TargetControlRotation.Yaw = ActorYaw + YawDifference;
+
+		/* Normalize TargetControlRotation so does not accumulate for ever (Goes from 0 to -179.999.../179.999... )*/
+		TargetControlRotation.Normalize();
+		
 		/*	Detect where is rotating and adjust sway target	*/
 		CameraRollTarget = LookAxisVector.X * -MaxLeanAngle;
 		
@@ -267,7 +287,7 @@ void APlayerCharacterC::Run(const FInputActionValue& Value)
 	if (MovementState == EMovementState::Walking && GetVelocity().SizeSquared() > 0.0f)
 	{	///	can start running
 		MovementState = EMovementState::Running;
-		
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 		// input is a Digital(Bool)
 		bool bIsCharacterRunning = Value.Get<bool>();
         	
@@ -290,7 +310,6 @@ void APlayerCharacterC::Run(const FInputActionValue& Value)
         			GetCharacterMovement()->MaxWalkSpeed = characterSprintSpeed;
         		}
         	}
-		
 	}
 }
 //
@@ -299,7 +318,7 @@ void APlayerCharacterC::Run(const FInputActionValue& Value)
 void APlayerCharacterC::StopRunning(const FInputActionValue& Value)
 {
 	bool bIsCharacterRunning = Value.Get<bool>();
-	
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	if (Controller != nullptr)
 	{	//	if is NOT running 
 		if (MovementState != EMovementState::Running)
@@ -508,7 +527,7 @@ void APlayerCharacterC::InteractLineTrace()
 		//	...and check if implements InteractuableInterface...
 		if (HitActor->Implements<UInteractuableInterface>())
 		{
-			//	...execute the GetItemData function on the interactuable actor.
+			//	...execute the GetItemData function on the interactuable actor and the interact function.
 			FItemData ItemData = IInteractuableInterface::Execute_GetItemData(HitActor);
 			//	if inventory component exists and add item to inventory using the ItemData provided by the interact actor
 			if (InventoryComponent && InventoryComponent->AddItem(ItemData))
@@ -516,8 +535,8 @@ void APlayerCharacterC::InteractLineTrace()
 				if (MainHUDWidgetInstance)
 				{	//	update the HUD Icons with the Texture2D provided by the interactuable actor
 					MainHUDWidgetInstance->UpdateInventoryDisplay(InventoryComponent->GetInventory());
-				}	//	destroy actor on use.
-				HitActor->Destroy();
+					IInteractuableInterface::Execute_Interact(HitActor);
+				}
 			}
 		}
 	}
@@ -608,7 +627,7 @@ void APlayerCharacterC::SelectSlot2() {HandleSlotSelection(2);}
 void APlayerCharacterC::SelectSlot3() {HandleSlotSelection(3);}
 void APlayerCharacterC::SelectSlot4() {HandleSlotSelection(4);}
 
-//	 Use the selected item depending on the input index.
+//	 Select the inventory item and show interaction message
 void APlayerCharacterC::HandleSlotSelection(int32 SlotIndex)
 {
 	//	check if the inventory component and the HUD exist
@@ -624,7 +643,7 @@ void APlayerCharacterC::HandleSlotSelection(int32 SlotIndex)
 		//	define the selected inventory slot with the SlotIndex
 		SelectedInventorySlot = SlotIndex;
 		
-		//	Init an array calle Item with the index items value
+		//	Init an array called Item with the index items value
 		const FItemData& Item = Items[SlotIndex];
 		
 		//	check if the selected item is consumable or a key
@@ -635,8 +654,14 @@ void APlayerCharacterC::HandleSlotSelection(int32 SlotIndex)
 			MainHUDWidgetInstance->ShowInventoryMessage(FText::FromString(MessageText));
 			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("%s"), *Item.ItemName));
 		}
+		else if (Item.ItemType == EItemType::Weapon)
+		{
+			FString MessageText = FString::Printf(TEXT("Pulsa F para equipar %s"), *Item.ItemName);
+			MainHUDWidgetInstance->ShowInventoryMessage(FText::FromString(MessageText));
+		}
 		else
-		{	//	if not, just dont show anything
+		{
+			//	if not, just dont show anything
 			MainHUDWidgetInstance->HideInventoryMessage();
 		}
 	}	//	if the index not valid...
@@ -644,5 +669,61 @@ void APlayerCharacterC::HandleSlotSelection(int32 SlotIndex)
 	{	//	The selected slot goes down to -1 (means is selecting nothing) and hides the interaction message
 		SelectedInventorySlot = -1;	
 		MainHUDWidgetInstance->HideInventoryMessage(); 
+	}
+}
+
+//	Use the selected inventory item
+void APlayerCharacterC::UseInventoryItem()
+{
+	if (SelectedInventorySlot>=0 && InventoryComponent)
+	{
+		
+		InventoryComponent->UseItem(SelectedInventorySlot);
+            		
+		MainHUDWidgetInstance->UpdateInventoryDisplay(InventoryComponent->GetInventory());
+		MainHUDWidgetInstance->HideInventoryMessage();
+		SelectedInventorySlot = -1;
+		
+		
+	}
+}
+
+void APlayerCharacterC::SpawnAndEquipItem(TSubclassOf<AActor> ItemClass)
+{
+	FTransform SocketTransform = SkeletalMesh->GetSocketTransform(FName("hand_rSocket"), RTS_World);
+	FVector SpawnLocation = SocketTransform.GetLocation();
+	FRotator SpawnRotation = SocketTransform.Rotator();
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = this;
+	
+	if (EquippedActor)
+	{
+		EquippedActor->Destroy();
+		EquippedActor = nullptr;
+	}
+	
+	if (ItemClass)
+	{
+		AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(ItemClass, SpawnLocation, SpawnRotation, SpawnParameters);
+		if (SpawnedActor)
+		{
+			SpawnedActor->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("hand_rSocket"));
+			EquippedActor = SpawnedActor;
+		}
+		
+	}
+}
+
+void APlayerCharacterC::EquipItemFromClass_Implementation(TSubclassOf<AActor> ItemClass, const FItemData& ItemData)
+{
+	SpawnAndEquipItem(ItemClass);
+
+	if (ItemData.ItemID == "pistol_01")
+	{
+		HoldingWeapon = EHoldingWeapon::Glock;
+	}
+	else if (ItemData.ItemID == "knife_01")
+	{
+		HoldingWeapon = EHoldingWeapon::Knife;
 	}
 }

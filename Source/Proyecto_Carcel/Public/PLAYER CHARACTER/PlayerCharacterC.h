@@ -4,6 +4,7 @@
 ///	libraries
 #include "INTERFACES/DamageableInterface.h"
 #include "INTERFACES/HealeableInterface.h"
+#include "INTERFACES/IEquipableHandlerIterface.h"
 #include "CoreMinimal.h"
 #include "InputAction.h"
 #include "GameFramework/Character.h"
@@ -52,6 +53,14 @@ enum class EFieldOfViewState : uint8
 	Running	UMETA(DisplayName = "Running"),
 	Fatigued UMETA(DisplayName = "Fatigued"),
 };
+
+UENUM(Blueprintable)
+enum class EHoldingWeapon : uint8
+{
+	None	UMETA(DisplayName = "None"),
+	Glock	UMETA(DisplayName = "Glock"),
+	Knife	UMETA(DisplayName = "Knife")
+};
 ///
 //////////////////////////////////////////////////////
 ///
@@ -61,7 +70,8 @@ enum class EFieldOfViewState : uint8
 UCLASS()
 class PROYECTO_CARCEL_API APlayerCharacterC : public ACharacter,
 public IDamageableInterface,
-public IHealeableInterface
+public IHealeableInterface,
+public IIEquipableHandlerIterface
 {
 	GENERATED_BODY()
 	
@@ -115,6 +125,22 @@ public IHealeableInterface
 	/** Interact Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
+
+	/*	Use Item Input Action*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* UseAction;
+
+	//	Input for selecting item from inventory
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SelectSlot0Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SelectSlot1Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SelectSlot2Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SelectSlot3Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SelectSlot4Action;
 	///
 	///
 	///////////////////////////////////////////////////
@@ -189,7 +215,9 @@ public:
 	float InterpFOVSpeed = 5.0;
 	///
 	/**	Create a FRotator for Camera Lag **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FOV")
 	FRotator TargetControlRotation;
+
 	/**	Interpolation Speed for the lag camera effect	**/
 	float InterpControlRotation = 15.0f;
 
@@ -204,11 +232,11 @@ public:
 	
 	///	Character's Max Movement Speeds */
 	UPROPERTY()
-	float characterSprintSpeed = 800.0f;
+	float characterSprintSpeed = 335.0f;
 	UPROPERTY()
-	float characterWalkSpeed = 300.0f;
+	float characterWalkSpeed = 130.0f;
 	UPROPERTY()
-	float characterSprintSpeedFatigued = 600.0f;
+	float characterSprintSpeedFatigued = 220.0f;
 	///
 	///
 	///	Character's Stamina State Values */
@@ -312,21 +340,16 @@ public:
 	//	Function that executes a Line Trace from camera forwards and detects actors who have interface
 	UFUNCTION(Blueprintable, Category = "Interact")
 	void DetectionLineTrace();
+	
+	/////////////////////////////////////////////////////////////////
+	///	INVENTORY-SYSTEM-VARS	INVENTORY-SYSTEM-VARS
+	///	INVENTORY-SYSTEM-VARS	INVENTORY-SYSTEM-VARS
+	/////////////////////////////////////////////////////////////////
+	
 	//	Init SelectedInventorySlot on unselected
 	UPROPERTY()
 	int32 SelectedInventorySlot = -1;
 
-	//	Input for selecting item from inventory
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* SelectSlot0Action;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* SelectSlot1Action;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* SelectSlot2Action;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* SelectSlot3Action;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* SelectSlot4Action;
 protected:
 	/////////////////////////////////////////////////////
 	///	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC	INPUTS-FUNC
@@ -356,6 +379,19 @@ protected:
 	
 	/*	Called for selecting inventory items	*/
 	void HandleSlotSelection(int32 SlotIndex);
+
+	/*	Called for using the selected item	*/
+	void UseInventoryItem();
+
+	UPROPERTY()
+	AActor* EquippedActor;
+	
+	void SpawnAndEquipItem(TSubclassOf<AActor> ItemClass);
+
+	virtual void EquipItemFromClass_Implementation(TSubclassOf<AActor> ItemClass, const FItemData& ItemData) override;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Weapons")
+	EHoldingWeapon HoldingWeapon = EHoldingWeapon::None;
 	
 	//	Functions for selecting items on the inventory called
 	void SelectSlot0();

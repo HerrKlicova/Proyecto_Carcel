@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "INTERFACES/InteractuableInterface.h"
+#include "Kismet/GameplayStatics.h"
 #include "PLAYER CHARACTER/COMPONENTS/ItemTypes.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
@@ -19,7 +20,12 @@ public:
 	// Sets default values for this actor's properties
 	AInteractuableActor();
 
-	
+	//	Create a sound property for interactuable actors
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* PickupSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* UseSound;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StaticMesh")
 	UStaticMeshComponent* StaticMesh;
