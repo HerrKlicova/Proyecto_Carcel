@@ -129,6 +129,10 @@ public IIEquipableHandlerIterface
 	/*	Use Item Input Action*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* UseAction;
+	
+	/* Aim Weapon Input Action*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* AimAction;
 
 	//	Input for selecting item from inventory
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -382,14 +386,18 @@ protected:
 
 	/*	Called for using the selected item	*/
 	void UseInventoryItem();
-
+	
+	//	Reference to the equipped actor
 	UPROPERTY()
 	AActor* EquippedActor;
 	
+	//	Function that spawns a selected item
 	void SpawnAndEquipItem(TSubclassOf<AActor> ItemClass);
-
+	
+	//	Function from the interface for equipping items
 	virtual void EquipItemFromClass_Implementation(TSubclassOf<AActor> ItemClass, const FItemData& ItemData) override;
 	
+	//	Enum for different types of holding weapons
 	UPROPERTY(BlueprintReadOnly, Category = "Weapons")
 	EHoldingWeapon HoldingWeapon = EHoldingWeapon::None;
 	
@@ -399,6 +407,14 @@ protected:
 	void SelectSlot2();
 	void SelectSlot3();
 	void SelectSlot4();
+
+	//Functions for aiming weapons
+	void StartAiming(const FInputActionValue& Value);
+	void StopAiming(const FInputActionValue& Value);
+	
+	//	Bool that changes when aiming or stops aiming
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons")
+	bool bIsAiming = false;
 	
 	/* Detect if controller has changed (inherited from AActor)	*/
 	virtual void NotifyControllerChanged() override;

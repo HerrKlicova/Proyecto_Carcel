@@ -184,10 +184,8 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Look);
 
-		//Running
+		//Running and stop running
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::Run);
-
-		//Stop Running
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &APlayerCharacterC::StopRunning);
 
 		//Interact
@@ -202,6 +200,9 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(SelectSlot2Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot2);
 		EnhancedInputComponent->BindAction(SelectSlot3Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot3);
 		EnhancedInputComponent->BindAction(SelectSlot4Action, ETriggerEvent::Started, this, &APlayerCharacterC::SelectSlot4);
+
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::StartAiming);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &APlayerCharacterC::StopAiming);
 	}
 	else
 	{
@@ -707,7 +708,7 @@ void APlayerCharacterC::SpawnAndEquipItem(TSubclassOf<AActor> ItemClass)
 		AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(ItemClass, SpawnLocation, SpawnRotation, SpawnParameters);
 		if (SpawnedActor)
 		{
-			SpawnedActor->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("hand_rSocket"));
+			SpawnedActor->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon_rSocket"));
 			EquippedActor = SpawnedActor;
 		}
 		
@@ -726,4 +727,19 @@ void APlayerCharacterC::EquipItemFromClass_Implementation(TSubclassOf<AActor> It
 	{
 		HoldingWeapon = EHoldingWeapon::Knife;
 	}
+}
+
+void APlayerCharacterC::StartAiming(const FInputActionValue& Value)
+{
+	if (HoldingWeapon == EHoldingWeapon::Glock)
+	{
+		bIsAiming = Value.Get<bool>();
+		UE_LOG(LogTemp, Display, TEXT("Aiming = %d"), bIsAiming);
+	}
+}
+
+void APlayerCharacterC::StopAiming(const FInputActionValue& Value)
+{
+	bIsAiming = Value.Get<bool>();
+	UE_LOG(LogTemp, Display, TEXT("Aiming = %d"), bIsAiming);
 }
