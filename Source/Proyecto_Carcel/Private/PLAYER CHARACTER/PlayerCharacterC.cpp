@@ -263,7 +263,7 @@ void APlayerCharacterC::Look(const FInputActionValue& Value)
 
 		float YawDifference = FMath::FindDeltaAngleDegrees(ActorYaw, TargetControlRotation.Yaw);
 
-		float MaxYawOffset = 130.0f;
+		float MaxYawOffset = 120.0f;
 
 		YawDifference = FMath::Clamp(YawDifference, -MaxYawOffset, MaxYawOffset);
 
@@ -696,13 +696,17 @@ void APlayerCharacterC::SpawnAndEquipItem(TSubclassOf<AActor> ItemClass)
 	FRotator SpawnRotation = SocketTransform.Rotator();
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = this;
-	
-	if (EquippedActor)
+
+	//	If has EquippedActor, despawn weapon and set Holding weapon to None and return so another weapon is not spawned
+	if (EquippedActor != nullptr)
 	{
 		EquippedActor->Destroy();
 		EquippedActor = nullptr;
+		HoldingWeapon = EHoldingWeapon::None;
+		UE_LOG(LogTemp, Display, TEXT("EquipItemFromClass_Implementation: Equiped actor is null"));
+		return;
 	}
-	
+	//	Spawn actor on SKM socket
 	if (ItemClass)
 	{
 		AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(ItemClass, SpawnLocation, SpawnRotation, SpawnParameters);
@@ -710,22 +714,24 @@ void APlayerCharacterC::SpawnAndEquipItem(TSubclassOf<AActor> ItemClass)
 		{
 			SpawnedActor->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon_rSocket"));
 			EquippedActor = SpawnedActor;
+			UE_LOG(LogTemp, Display, TEXT("EquipItemFromClass_Implementation: Equiped actor is not null"));
 		}
-		
 	}
 }
 
 void APlayerCharacterC::EquipItemFromClass_Implementation(TSubclassOf<AActor> ItemClass, const FItemData& ItemData)
 {
-	SpawnAndEquipItem(ItemClass);
-
-	if (ItemData.ItemID == "pistol_01")
+	if (!ItemClass) return;
+	
+	//	If is not holding any weapon and the ItemID is Pistol, spawn weapon and set EquippedActor
+	if (HoldingWeapon == EHoldingWeapon::None && ItemData.ItemID == "pistol_01")
 	{
+		SpawnAndEquipItem(ItemClass);
 		HoldingWeapon = EHoldingWeapon::Glock;
-	}
-	else if (ItemData.ItemID == "knife_01")
+	}	//	If is holding weapon, try to despawn weapon 
+	else
 	{
-		HoldingWeapon = EHoldingWeapon::Knife;
+		SpawnAndEquipItem(ItemClass);
 	}
 }
 
@@ -734,12 +740,11 @@ void APlayerCharacterC::StartAiming(const FInputActionValue& Value)
 	if (HoldingWeapon == EHoldingWeapon::Glock)
 	{
 		bIsAiming = Value.Get<bool>();
-		UE_LOG(LogTemp, Display, TEXT("Aiming = %d"), bIsAiming);
+		//GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	}
 }
-
 void APlayerCharacterC::StopAiming(const FInputActionValue& Value)
 {
 	bIsAiming = Value.Get<bool>();
-	UE_LOG(LogTemp, Display, TEXT("Aiming = %d"), bIsAiming);
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 }

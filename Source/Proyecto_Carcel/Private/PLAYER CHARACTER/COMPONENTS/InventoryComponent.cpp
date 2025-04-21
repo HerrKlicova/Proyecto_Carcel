@@ -7,6 +7,7 @@
 #include "INTERFACES/IEquipableHandlerIterface.h"
 #include "INTERFACES/InteractuableInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "PLAYER CHARACTER/PlayerCharacterC.h"
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
@@ -91,6 +92,7 @@ void UInventoryComponent::UseItem(int32 SlotIndex)
 		break;
 		//	just log the item on the output log... logic will be implemented
 	case EItemType::Weapon:
+		
 		if (AActor* Owner = GetOwner())
 		{
 			if (Owner->GetClass()->ImplementsInterface(UIEquipableHandlerIterface::StaticClass()))

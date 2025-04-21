@@ -389,7 +389,7 @@ protected:
 	
 	//	Reference to the equipped actor
 	UPROPERTY()
-	AActor* EquippedActor;
+	AActor* EquippedActor = nullptr;
 	
 	//	Function that spawns a selected item
 	void SpawnAndEquipItem(TSubclassOf<AActor> ItemClass);
@@ -426,5 +426,4 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera;}
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const {return CameraBoom;}
-	
 };
