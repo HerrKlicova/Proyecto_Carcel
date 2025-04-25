@@ -33,9 +33,13 @@ struct FItemData
 	//	Icon that will be shown on the HUD
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	UTexture2D* ItemIcon;
+	//	Sound reproduced when picking up an item
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	USoundBase* PickupSound;
 	//	Sound reproduced when item used
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	USoundBase* UseSound;
+
 	//	Value by defect for consumable objects like Health, Damage...
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	float EffectValue = 0.0f;

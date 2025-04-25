@@ -3,6 +3,7 @@
 
 #include "Weapon.h"
 #include "Components/BoxComponent.h"
+#include "EntitySystem/MovieSceneEntitySystemRunner.h"
 
 // Sets default values
 AWeapon::AWeapon()
@@ -21,7 +22,6 @@ AWeapon::AWeapon()
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -39,4 +39,58 @@ void AWeapon::Interact_Implementation()
 FItemData AWeapon::GetItemData_Implementation()
 {
 	return WeaponItemData;
+}
+
+
+void AWeapon::FireWeaponLineTrace()
+{
+	FHitResult Hit;
+	
+	FTransform SocketLocation = WeaponMesh->GetSocketTransform(FName("MuzzleFlash"), RTS_World);
+	FRotator SocketRotation = SocketLocation.GetRotation().Rotator();
+	FVector SocketForward = SocketRotation.Vector();
+	
+	FVector StartLocation = SocketLocation.GetLocation();
+
+	FVector EndLocation = StartLocation + SocketForward * 600.0f;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, FireWeaponChannelProperty, QueryParams);
+
+	CurrentAmmo--;
+	CurrentAmmo = FMath::Clamp(CurrentAmmo, 0, MaxAmmo);
+	if (CurrentAmmo <= 0)
+	{
+		bHasAmmo = false;
+	}
+	DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Cyan : FColor::Yellow, false, 0.3, 0, 1.0f);
+}
+
+void AWeapon::FireWeaponCall_Implementation()
+{
+	if (bHasAmmo)
+	{
+		FireWeaponLineTrace();
+	}
+}
+
+bool AWeapon::HasAmmo_Implementation() const
+{
+	return bHasAmmo;
+}
+
+int32 AWeapon::GetAmmo_Implementation() const
+{
+	return CurrentAmmo;
+}
+
+void AWeapon::Reload_Implementation()
+{
+	if (CurrentAmmo == 0)
+	{
+		CurrentAmmo = MaxAmmo;
+		bHasAmmo = true;
+	}
 }

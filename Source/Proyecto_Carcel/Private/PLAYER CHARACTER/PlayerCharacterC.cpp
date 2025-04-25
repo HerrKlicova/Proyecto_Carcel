@@ -203,6 +203,10 @@ void APlayerCharacterC::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &APlayerCharacterC::StartAiming);
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &APlayerCharacterC::StopAiming);
+
+		EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Started, this, &APlayerCharacterC::FireWeapon);
+
+		EnhancedInputComponent->BindAction(ReloadWeaponAction, ETriggerEvent::Started, this, &APlayerCharacterC::ReloadWeapon);
 	}
 	else
 	{
@@ -555,7 +559,7 @@ void APlayerCharacterC::DetectionLineTrace()
 	QueryParams.AddIgnoredActor(this);
 	
 	//	uses as channel the detection collision channel
-	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, DetecitonChannelProperty, QueryParams);
+	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, DetectionChannelProperty, QueryParams);
 
 	//	check if Hit Actor blocked and if the actor blocked is valid
 	if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
@@ -747,4 +751,31 @@ void APlayerCharacterC::StopAiming(const FInputActionValue& Value)
 {
 	bIsAiming = Value.Get<bool>();
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+}
+
+void APlayerCharacterC::FireWeapon(const FInputActionValue& Value)
+{
+	bIsFiring = Value.Get<bool>();
+
+	if (Controller && bIsAiming)
+	{
+		if (EquippedActor && EquippedActor->Implements<UFireWeaponInterface>())
+		{
+			IFireWeaponInterface::Execute_FireWeaponCall(EquippedActor);
+		}
+	}
+}
+
+void APlayerCharacterC::ReloadWeapon(const FInputActionValue& Value)
+{
+	bIsReloading = Value.Get<bool>();
+
+	if (Controller)
+	{
+		if (EquippedActor && EquippedActor->Implements<UFireWeaponInterface>())
+		{
+			IFireWeaponInterface::Execute_Reload(EquippedActor);
+			UE_LOG(LogTemp, Display, TEXT("RELOAD"));
+		}
+	}
 }

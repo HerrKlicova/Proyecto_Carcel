@@ -50,6 +50,7 @@ bool UInventoryComponent::AddItem(const FItemData& NewItem)
 	}
 	//	Add a new item to the inventory.
 	InventorySlots.Add(NewItem);
+	UGameplayStatics::PlaySound2D(GetWorld(), NewItem.PickupSound);
 	//	Log and return the bool on true (success)
 	UE_LOG(LogTemp, Warning, TEXT("Nuevo objeto agregado al inventario %s"), *NewItem.ItemName);
 	return true;
@@ -98,6 +99,8 @@ void UInventoryComponent::UseItem(int32 SlotIndex)
 			if (Owner->GetClass()->ImplementsInterface(UIEquipableHandlerIterface::StaticClass()))
 			{
 				IIEquipableHandlerIterface::Execute_EquipItemFromClass(Owner, Item.ItemClass, Item);
+				
+				UGameplayStatics::PlaySound2D(GetWorld(), Item.UseSound);
 			}
 		}
 		break;

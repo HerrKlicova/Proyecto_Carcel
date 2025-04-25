@@ -133,7 +133,15 @@ public IIEquipableHandlerIterface
 	/* Aim Weapon Input Action*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* AimAction;
+	
+	/* Fire Weapon Input Action*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* FireWeaponAction;
 
+	/* Reload Weapon Input Action*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReloadWeaponAction;
+	
 	//	Input for selecting item from inventory
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SelectSlot0Action;
@@ -321,7 +329,7 @@ public:
 	
 	///	Declares the channel throught the Detection RayCast will be thrown
 	UPROPERTY(EditAnywhere, Category = "Interact")
-	TEnumAsByte<ECollisionChannel> DetecitonChannelProperty = ECC_GameTraceChannel3;
+	TEnumAsByte<ECollisionChannel> DetectionChannelProperty = ECC_GameTraceChannel3;
 	
 	//	Timer for detection LineTrace
 	FTimerHandle DetectionTimerHandle;
@@ -365,7 +373,7 @@ protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
-	/** Called when movement is completed */
+	/** Called when movement is completed */	
 	UFUNCTION()
 	void MovementCompleted();
 	
@@ -388,7 +396,7 @@ protected:
 	void UseInventoryItem();
 	
 	//	Reference to the equipped actor
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	AActor* EquippedActor = nullptr;
 	
 	//	Function that spawns a selected item
@@ -411,10 +419,20 @@ protected:
 	//Functions for aiming weapons
 	void StartAiming(const FInputActionValue& Value);
 	void StopAiming(const FInputActionValue& Value);
+
+	void FireWeapon(const FInputActionValue& Value);
+
+	void ReloadWeapon(const FInputActionValue& Value);
 	
 	//	Bool that changes when aiming or stops aiming
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons")
 	bool bIsAiming = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons")
+	bool bIsFiring = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons")
+	bool bIsReloading = false;
 	
 	/* Detect if controller has changed (inherited from AActor)	*/
 	virtual void NotifyControllerChanged() override;

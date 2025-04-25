@@ -16,30 +16,20 @@ AInteractuableActor::AInteractuableActor()
 	StaticMesh->SetupAttachment(BoxComponent);
 }
 
-
-
-
 // Called when the game starts or when spawned
 void AInteractuableActor::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 // Called every frame
 void AInteractuableActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AInteractuableActor::Interact_Implementation()
-{	//	Play sound at location on interacted (implemented on instances)
-	if (PickupSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
-	}
-	
+{	
 	Destroy();
 }
 
@@ -52,6 +42,7 @@ FItemData AInteractuableActor::GetItemData_Implementation()
 	ClassData.ItemIcon = ItemIcon;
 	ClassData.EffectValue = EffectValue;
 	ClassData.UseSound = UseSound;
+	ClassData.PickupSound = PickupSound;
 	
 	return ClassData;
 }
