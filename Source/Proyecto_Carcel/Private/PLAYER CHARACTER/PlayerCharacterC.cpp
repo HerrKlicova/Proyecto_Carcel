@@ -770,7 +770,7 @@ void APlayerCharacterC::ReloadWeapon(const FInputActionValue& Value)
 {
 	bIsReloading = Value.Get<bool>();
 
-	if (Controller)
+	if (Controller && HoldingWeapon == EHoldingWeapon::Glock)
 	{
 		if (EquippedActor && EquippedActor->Implements<UFireWeaponInterface>())
 		{

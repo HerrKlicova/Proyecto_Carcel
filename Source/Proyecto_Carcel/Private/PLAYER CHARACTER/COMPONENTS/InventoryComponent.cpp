@@ -42,7 +42,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 //	Function that returns the success or fail of adding a new item to the inventory
 bool UInventoryComponent::AddItem(const FItemData& NewItem)
 {
-	//	If we already have 5 items, we cant add more
+	//	If we already have max items, we cant add more
 	if (InventorySlots.Num() >= MaxSlots)
 	{	//	Log and return the bool on false (failed)
 		UE_LOG(LogTemp, Warning, TEXT("Inventario lleno. No se puede agregar %s"), *NewItem.ItemName);
@@ -68,6 +68,9 @@ void UInventoryComponent::UseItem(int32 SlotIndex)
 	
 	//	Get the item slot and save it on the index
 	const FItemData& Item = InventorySlots[SlotIndex];
+	FItemData& Item2 = InventorySlots[SlotIndex];
+	FItemData Item3 = InventorySlots[SlotIndex];
+	const FItemData* Item4 = &InventorySlots[SlotIndex];
 	
 	//	Apply logic depending on the item type
 	switch (Item.ItemType)
@@ -124,4 +127,3 @@ void UInventoryComponent::RemoveItem(int32 SlotIndex)
 	InventorySlots.RemoveAt(SlotIndex);
 	UE_LOG(LogTemp, Warning, TEXT("Nuevo objeto removido %d"), SlotIndex);
 }
-

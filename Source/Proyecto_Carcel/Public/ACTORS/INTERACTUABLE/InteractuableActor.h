@@ -21,34 +21,34 @@ public:
 	AInteractuableActor();
 
 	//	Create a sound property for interactuable actors
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Audio")
 	USoundBase* UseSound;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Audio")
 	USoundBase* PickupSound;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StaticMesh")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|StaticMesh")
 	UStaticMeshComponent* StaticMesh;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Collision")
 	UBoxComponent* BoxComponent;
 	
 	//	Custom name for interactuable actors
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interact")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Interact")
 	FText ItemName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Item Type")
 	FName ItemID;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Item Type")
 	FString ItemNames;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Item Type")
 	EItemType ItemType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Item Type")
 	UTexture2D* ItemIcon;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Type")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carcel|Interactuable Actor|Item Type")
 	float EffectValue;
 	
 	//	Implement interaction interface function

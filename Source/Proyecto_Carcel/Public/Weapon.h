@@ -62,8 +62,9 @@ public:
 	int32 MaxAmmo = 8;
 	UPROPERTY(EditAnywhere,	BlueprintReadWrite, Category = "Weapon")
 	bool bHasAmmo = true;
-
-	
+	UPROPERTY(EditAnywhere,	BlueprintReadWrite, Category = "Weapon")
+	float DamageAmount = 25;
+		
 	
 protected:
 	// Called when the game starts or when spawned
@@ -74,3 +75,5 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 };
+
+

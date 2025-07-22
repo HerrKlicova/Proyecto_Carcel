@@ -4,6 +4,7 @@
 #include "Weapon.h"
 #include "Components/BoxComponent.h"
 #include "EntitySystem/MovieSceneEntitySystemRunner.h"
+#include "INTERFACES/DamageableInterface.h"
 
 // Sets default values
 AWeapon::AWeapon()
@@ -58,6 +59,14 @@ void AWeapon::FireWeaponLineTrace()
 	QueryParams.AddIgnoredActor(this);
 
 	GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, FireWeaponChannelProperty, QueryParams);
+
+	AActor* HitActor = Hit.GetActor();
+
+	// IMPLEMENTING DAMAGE CHARACTER
+	if (HitActor && HitActor->Implements<UDamageableInterface>())
+	{
+		IDamageableInterface::Execute_ApplyDamage(HitActor, DamageAmount);
+	}
 
 	CurrentAmmo--;
 	CurrentAmmo = FMath::Clamp(CurrentAmmo, 0, MaxAmmo);
