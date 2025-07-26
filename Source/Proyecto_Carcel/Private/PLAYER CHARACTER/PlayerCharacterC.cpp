@@ -20,6 +20,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Components/InputComponent.h"
 #include "GeometryCollection/GeometryCollectionParticlesData.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UniversalObjectLocators/UniversalObjectLocatorUtils.h"
 ////
 ///
@@ -67,14 +68,14 @@ APlayerCharacterC::APlayerCharacterC()
 
 	//	init inventory component
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
-
-	
 	/** Nota: Las referencias al skeletal mesh y el anim blueprint en el componente mesh (heredado de Character)
 		son puestas en el blueprint asset derivado llamado ThirdPersonCharacter (para evitar referencias de contenido directas)	**/
 }
 ////
 ///
 //	begin play (HUD and Timers)
+
+
 void APlayerCharacterC::BeginPlay()
 {
 	Super::BeginPlay();
@@ -110,7 +111,8 @@ void APlayerCharacterC::BeginPlay()
 	
 	/**	Check if Player Character exists	**/
 	if (IsValid(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)))
-	{	/**	Init stamina timer 1.0f **/
+	{
+		/**	Init stamina timer 1.0f **/
 		GetWorldTimerManager().SetTimer(
 		StaminaTimerHandle,
 		this,
@@ -118,18 +120,17 @@ void APlayerCharacterC::BeginPlay()
 		1.0f,
 		true
 		);
+		
 		/**	Init detection timer 0.1f **/
 		GetWorldTimerManager().SetTimer(
-    	DetectionTimerHandle,
-    	this,
-    	&APlayerCharacterC::DetectionLineTrace,
-    	0.1f,
-    	true
-    	);
+		DetectionTimerHandle,
+		this,
+		&APlayerCharacterC::DetectionLineTrace,
+		0.1f,
+		true
+		);
 	}
 }
-
-
 /**	Tick. Camera FOV and Camera Lag	**/
 void APlayerCharacterC::Tick(float DeltaTime)
 {	//	Tick (Camera FOV)
@@ -140,7 +141,6 @@ void APlayerCharacterC::Tick(float DeltaTime)
 
 	/**	Calls the camera lag function **/
 	UpdateCameraLag();
-
 }
 //
 ///
@@ -553,36 +553,37 @@ void APlayerCharacterC::DetectionLineTrace()
 	FHitResult Hit;
 
 	FVector Start = FollowCamera->GetComponentLocation();
-	FVector End = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 500.0f;
+	FVector End = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 150.0f;
 	
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	
-	//	uses as channel the detection collision channel
-	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, DetectionChannelProperty, QueryParams);
-
-	//	check if Hit Actor blocked and if the actor blocked is valid
-	if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
-	{	//	save the Hit Actor on a AActor pointer
-		AActor* CurrentActor = Hit.GetActor();
+		//	uses as channel the detection collision channel
+		GetWorld()->LineTraceSingleByChannel(Hit, Start, End, DetectionChannelProperty, QueryParams);
 		
-		//	if the detected actor is not equal to the last detected actor...
-		if (CurrentActor != LastDetectedActor.Get() && CurrentActor->Implements<UInteractuableInterface>())
-		{	//	...last detected actor will become the current actor
-			LastDetectedActor = CurrentActor;
+		//	check if Hit Actor blocked and if the actor blocked is valid
+		if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
+		{	//	save the Hit Actor on a AActor pointer
+			AActor* CurrentActor = Hit.GetActor();
+		
+			//	if the detected actor is not equal to the last detected actor...
+			if (CurrentActor != LastDetectedActor.Get() && CurrentActor->Implements<UInteractuableInterface>())
+			{	//	...last detected actor will become the current actor
+				LastDetectedActor = CurrentActor;
 			
-			/**	Show on HUD interaction message	using the interaction interface function **/
-			FText Message = IInteractuableInterface::Execute_GetInteractionText(CurrentActor);
-			MainHUDWidgetInstance->ShowInteractionMessage(Message);
+				/**	Show on HUD interaction message	using the interaction interface function **/
+				FText Message = IInteractuableInterface::Execute_GetInteractionText(CurrentActor);
+				MainHUDWidgetInstance->ShowInteractionMessage(Message);
+			}
 		}
-	}
-	//	if the detected actor is the same as the last detected actor...
-	else
-	{	//	...clean the last detected actor pointer
-		LastDetectedActor = nullptr;
-		MainHUDWidgetInstance->HideInteractionMessage();
-	}
-	//DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Yellow, false, 0.1f, 0, 1.0f);
+		//	if the detected actor is the same as the last detected actor...
+		else
+		{	//	...clean the last detected actor pointer
+			LastDetectedActor = nullptr;
+			MainHUDWidgetInstance->HideInteractionMessage();
+		}
+		DrawDebugLine(GetWorld(), Hit.TraceStart, Hit.TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Yellow, false, 0.1f, 0, 1.0f);
+	
 }
 
 /*	This function Interpolates the camera Control Rotation to create a camera lag <-Called on Tick-> */

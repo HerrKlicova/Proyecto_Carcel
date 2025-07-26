@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "EntitySystem/MovieSceneEntitySystemRunner.h"
 #include "INTERFACES/DamageableInterface.h"
+#include "PLAYER CHARACTER/PlayerCharacterC.h"
 
 // Sets default values
 AWeapon::AWeapon()

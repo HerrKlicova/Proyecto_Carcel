@@ -68,9 +68,9 @@ void UInventoryComponent::UseItem(int32 SlotIndex)
 	
 	//	Get the item slot and save it on the index
 	const FItemData& Item = InventorySlots[SlotIndex];
-	FItemData& Item2 = InventorySlots[SlotIndex];
-	FItemData Item3 = InventorySlots[SlotIndex];
-	const FItemData* Item4 = &InventorySlots[SlotIndex];
+	//FItemData& Item2 = InventorySlots[SlotIndex];
+	//FItemData Item3 = InventorySlots[SlotIndex];
+	//const FItemData* Item4 = &InventorySlots[SlotIndex];
 	
 	//	Apply logic depending on the item type
 	switch (Item.ItemType)
